@@ -1,0 +1,317 @@
+
+
+/* Scrollbar with glow effect */
+.scrollbar-glow::-webkit-scrollbar {
+  width: 10px;
+}
+
+.scrollbar-glow::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  margin: 4px;
+}
+
+.scrollbar-glow::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, #6366f1, #8b5cf6, #ec4899);
+  border-radius: 10px;
+  position: relative;
+  animation: scrollbarGlow 3s ease-in-out infinite alternate;
+}
+
+@keyframes scrollbarGlow {
+  0% {
+    box-shadow: 0 0 5px rgba(99, 102, 241, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.8), 0 0 30px rgba(236, 72, 153, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(99, 102, 241, 0.5);
+  }
+}
+
+/* Smooth scrolling behavior */
+/* Modern Custom Scrollbar - Chatbot Icon Colors */
+.scrollbar-modern::-webkit-scrollbar {
+  width: 4px;
+  background: transparent;
+}
+
+.scrollbar-modern::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Light mode - Purple-600 like chatbot icon */
+.scrollbar-modern::-webkit-scrollbar-thumb {
+  background: #9333ea; /* Purple-600 solid color */
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.scrollbar-modern::-webkit-scrollbar-thumb:hover {
+  background: #7c3aed; /* Purple-700 on hover */
+}
+
+/* Dark mode - Blue-600 like chatbot icon */
+body.dark-mode .scrollbar-modern::-webkit-scrollbar-thumb {
+  background: #2563eb !important; /* Blue-600 solid color */
+}
+
+body.dark-mode .scrollbar-modern::-webkit-scrollbar-thumb:hover {
+  background: #1d4ed8 !important; /* Blue-700 on hover */
+}
+
+/* Firefox support */
+.scrollbar-modern {
+  scrollbar-width: thin;
+  scrollbar-color: #9333ea transparent; /* Purple-600 for light mode */
+}
+
+body.dark-mode .scrollbar-modern {
+  scrollbar-color: #2563eb transparent !important; /* Blue-600 for dark mode */
+}
+
+/* Enhanced chat spacing - prevent scrollbar overlap with input */
+.chat-spacing {
+  margin-bottom: 1.5rem;
+}
+
+/* Chat content spacing - prevent scrollbar overlap */
+.chat-content-spacer {
+  padding-bottom: 160px; /* Extra space to prevent input overlap + scrollbar space */
+  margin-right: 6px; /* Space for very small scrollbar */
+}
+
+/* Slider customization - Chatbot icon colors */
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #9333ea; /* Purple-600 solid */
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background 0.3s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  background: #7c3aed; /* Purple-700 on hover */
+}
+
+input[type="range"]::-webkit-slider-track {
+  background: #e5e7eb; /* Gray-200 solid */
+  height: 6px;
+  border-radius: 3px;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #9333ea; /* Purple-600 solid */
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background 0.3s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  background: #7c3aed; /* Purple-700 on hover */
+}
+
+/* Dark mode slider colors */
+body.dark-mode input[type="range"]::-webkit-slider-thumb {
+  background: #2563eb !important; /* Blue-600 solid */
+}
+
+body.dark-mode input[type="range"]::-webkit-slider-thumb:hover {
+  background: #1d4ed8 !important; /* Blue-700 on hover */
+}
+
+body.dark-mode input[type="range"]::-webkit-slider-track {
+  background: #374151 !important; /* Gray-700 for dark mode */
+}
+
+body.dark-mode input[type="range"]::-moz-range-thumb {
+  background: #2563eb !important; /* Blue-600 solid */
+}
+
+body.dark-mode input[type="range"]::-moz-range-thumb:hover {
+  background: #1d4ed8 !important; /* Blue-700 on hover */
+}
+.bg-gradient-mesh {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Responsive design helpers */
+@media (max-width: 640px) {
+  .mobile-padding {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Focus states */
+.focus-visible:focus {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+/* Loading animation */
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Message bubble hover effects */
+.message-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-in-out;
+}
+
+/* Typing indicator */
+@keyframes typing {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-10px);
+  }
+}
+
+.typing-dot {
+  animation: typing 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Button hover effects */
+.btn-primary {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #5855eb, #7c3aed);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* Chat container styles */
+.chat-container {
+  min-height: calc(100vh - 140px);
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .chat-container {
+    min-height: calc(100vh - 120px);
+  }
+  
+  .message-bubble {
+    max-width: 85%;
+  }
+  
+  /* Mobile fixed input adjustments */
+  .fixed-input-mobile {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .fixed-input-mobile .bg-white\/95 {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+/* Fixed input area styles */
+.fixed-input-area {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+/* Fixed settings panel styles */
+.fixed-settings-panel {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure chat content doesn't get hidden behind fixed input */
+.chat-content-spacer {
+  padding-bottom: 6rem;
+}
+
+/* Settings panel animation */
+.settings-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (max-width: 640px) {
+  .chat-content-spacer {
+    padding-bottom: 5rem;
+  }
+  
+  .fixed-input-area {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  .fixed-input-mobile {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+  
+  /* Mobile chat adjustments */
+  .max-w-5xl {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Mobile settings panel adjustment */
+  .fixed-settings-panel {
+    top: 80px !important;
+  }
+  
+  /* Mobile chat container with settings */
+  .chat-with-settings-mobile {
+    margin-top: 180px !important;
+    height: calc(100vh - 260px) !important;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .dark-mode {
+    background: linear-gradient(135deg, #1e1b4b, #312e81);
+    color: white;
+  }
+}
