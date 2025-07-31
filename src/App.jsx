@@ -32,9 +32,16 @@ function App() {
     temperature: 0.7,
     maxLength: 1000,
     topP: 0.9,
+    topK: 3, // RAG için doküman sayısı
   });
   const [showSettings, setShowSettings] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState("connected"); // connected, disconnected, testing
+  const [ragStatus, setRagStatus] = useState({
+    system: 'unknown',
+    ollama: 'unknown',
+    documents: 0,
+    model: 'unknown'
+  }); // RAG sistem durumu
   const [isDarkMode, setIsDarkMode] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -102,18 +109,15 @@ function App() {
 
   const callChatAPI = async (message) => {
     const response = await fetch(
-      "https://d0830e37b7ec.ngrok-free.app/generate",
+      "http://localhost:8000/generate",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true",
         },
         body: JSON.stringify({
-          prompt: message,
-          max_tokens: apiSettings.maxLength,
-          temperature: apiSettings.temperature,
-          top_p: apiSettings.topP,
+          question: message, // RAG API formatı
+          top_k: apiSettings.topK // Ayarlardan alınan doküman sayısı
         }),
       }
     );
@@ -123,37 +127,15 @@ function App() {
     }
 
     const data = await response.json();
-    let responseText =
-      data.generated_text || data.response || data.text || "Yanıt alınamadı";
+    // RAG API'den gelen yanıt
+    let responseText = data.answer || "Yanıt alınamadı";
 
-    // Advanced cleaning: Remove the original question from the response
-    // Handle different formats like "Question?\n\nAnswer" or "Question?\nAnswer"
-    const questionPatterns = [
-      new RegExp(
-        `^${message.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\?*\\s*\\n+`,
-        "i"
-      ),
-      new RegExp(
-        `^${message.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\?*\\s*`,
-        "i"
-      ),
-      /^[^?]*\?\s*\n+/i, // Any question ending with ? followed by newlines
-      /^[^?]*\?\s*/i, // Any question ending with ? followed by spaces
-    ];
-
-    for (const pattern of questionPatterns) {
-      if (pattern.test(responseText)) {
-        responseText = responseText.replace(pattern, "");
-        break;
-      }
+    // Ollama hatası kontrolü
+    if (responseText.includes("Ollama hatasÄ±: 500") || responseText.includes("Ollama hatası: 500")) {
+      responseText = "🔧 Model yükleme hatası. RAG sistemi çalışıyor ancak AI modeli yüklenemiyor. Lütfen sistem yöneticisine başvurun veya birkaç dakika bekleyip tekrar deneyin.";
     }
 
-    responseText = responseText
-      .replace(/^\s*[-=_]{2,}\s*/, "") // Remove separator lines
-      .replace(/^\s*[:\-\|]\s*/, "") // Remove leading separators
-      .replace(/^\s*\n+/, "") // Remove leading newlines
-      .trim();
-
+    // Boş yanıt kontrolü
     if (!responseText || responseText.length < 10) {
       responseText = "Yanıt oluşturulamadı, lütfen soruyu yeniden deneyin.";
     }
@@ -174,8 +156,30 @@ function App() {
     }
   };
 
+  const checkRAGStatus = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/status");
+      const status = await response.json();
+      setRagStatus({
+        system: status.rag_system,
+        ollama: status.ollama_status,
+        documents: status.document_count,
+        model: status.model
+      });
+    } catch (error) {
+      console.error("RAG Status Error:", error);
+      setRagStatus({
+        system: 'error',
+        ollama: 'error',
+        documents: 0,
+        model: 'unknown'
+      });
+    }
+  };
+
   useEffect(() => {
     testApiConnection();
+    checkRAGStatus(); // RAG durumunu da kontrol et
   }, []);
 
   const handleKeyPress = (e) => {
@@ -328,23 +332,23 @@ function App() {
             }`}>
               API Ayarları
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
                   isDarkMode ? 'text-gray-200' : 'text-gray-700'
                 }`}>
-                  Temperature (Yaratıcılık)
+                  Top K (Doküman Sayısı)
                 </label>
                 <input
                   type="range"
-                  min="0.1"
-                  max="2.0"
-                  step="0.1"
-                  value={apiSettings.temperature}
+                  min="1"
+                  max="10"
+                  step="1"
+                  value={apiSettings.topK}
                   onChange={(e) =>
                     setApiSettings((prev) => ({
                       ...prev,
-                      temperature: parseFloat(e.target.value),
+                      topK: parseInt(e.target.value),
                     }))
                   }
                   className={`w-full h-2 rounded-lg appearance-none cursor-pointer transition-colors duration-300 ${
@@ -354,9 +358,9 @@ function App() {
                 <div className={`flex justify-between text-xs mt-1 transition-colors duration-300 ${
                   isDarkMode ? 'text-gray-400' : 'text-gray-500'
                 }`}>
-                  <span>Düşük (0.1)</span>
-                  <span className="font-medium">{apiSettings.temperature}</span>
-                  <span>Yüksek (2.0)</span>
+                  <span>Az (1)</span>
+                  <span className="font-medium">{apiSettings.topK}</span>
+                  <span>Çok (10)</span>
                 </div>
               </div>
 
@@ -364,61 +368,30 @@ function App() {
                 <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
                   isDarkMode ? 'text-gray-200' : 'text-gray-700'
                 }`}>
-                  Max Length (Maksimum Uzunluk)
+                  RAG Durumu
                 </label>
-                <input
-                  type="range"
-                  min="100"
-                  max="2000"
-                  step="100"
-                  value={apiSettings.maxLength}
-                  onChange={(e) =>
-                    setApiSettings((prev) => ({
-                      ...prev,
-                      maxLength: parseInt(e.target.value),
-                    }))
-                  }
-                  className={`w-full h-2 rounded-lg appearance-none cursor-pointer transition-colors duration-300 ${
-                    isDarkMode ? 'bg-gray-600' : 'bg-gray-200'
-                  }`}
-                />
-                <div className={`flex justify-between text-xs mt-1 transition-colors duration-300 ${
-                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                <div className={`p-3 rounded-lg transition-colors duration-300 ${
+                  isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
                 }`}>
-                  <span>Kısa (100)</span>
-                  <span className="font-medium">{apiSettings.maxLength}</span>
-                  <span>Uzun (2000)</span>
-                </div>
-              </div>
-
-              <div>
-                <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
-                  isDarkMode ? 'text-gray-200' : 'text-gray-700'
-                }`}>
-                  Top P (Çeşitlilik)
-                </label>
-                <input
-                  type="range"
-                  min="0.1"
-                  max="1.0"
-                  step="0.1"
-                  value={apiSettings.topP}
-                  onChange={(e) =>
-                    setApiSettings((prev) => ({
-                      ...prev,
-                      topP: parseFloat(e.target.value),
-                    }))
-                  }
-                  className={`w-full h-2 rounded-lg appearance-none cursor-pointer transition-colors duration-300 ${
-                    isDarkMode ? 'bg-gray-600' : 'bg-gray-200'
-                  }`}
-                />
-                <div className={`flex justify-between text-xs mt-1 transition-colors duration-300 ${
-                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                }`}>
-                  <span>Odaklı (0.1)</span>
-                  <span className="font-medium">{apiSettings.topP}</span>
-                  <span>Çeşitli (1.0)</span>
+                  <div className="space-y-1">
+                    <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      Sistem: <span className={ragStatus.system === 'ready' ? 'text-green-500' : 'text-red-500'}>{ragStatus.system}</span>
+                    </div>
+                    <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      Ollama: <span className={ragStatus.ollama === 'online' ? 'text-green-500' : 'text-red-500'}>{ragStatus.ollama}</span>
+                    </div>
+                    <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      Model: <span className={ragStatus.model ? 'text-blue-500' : 'text-red-500'}>{ragStatus.model || 'yok'}</span>
+                    </div>
+                    <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      Dokümanlar: {ragStatus.documents}
+                    </div>
+                  </div>
+                  {ragStatus.ollama === 'online' && ragStatus.system === 'ready' && (
+                    <div className={`mt-2 text-xs ${isDarkMode ? 'text-yellow-300' : 'text-orange-600'}`}>
+                      ⚠️ Model hatası varsa birkaç dakika bekleyin
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -430,7 +403,7 @@ function App() {
                 isDarkMode ? 'text-purple-200' : 'text-blue-800'
               }`}>
                 <strong>API Endpoint:</strong>{" "}
-                https://0a8693b328e8.ngrok-free.app/generate
+                http://localhost:8000/generate
               </p>
               <p className={`text-xs mt-1 transition-colors duration-300 ${
                 isDarkMode ? 'text-purple-300' : 'text-blue-600'
@@ -438,10 +411,9 @@ function App() {
                 <span className={`font-semibold font-mono ${
                   isDarkMode ? 'text-purple-100' : 'text-slate-800'
                 }`}>
-                  Mistral-7B-Instruct v0.3{" "}
+                  LLaMA 3.2{" "}
                 </span>
-                modeli üzerinde çalışıyor. Ayarları değiştirdikten sonra yeni
-                mesajlar bu parametrelerle gönderilecek.
+                modeli üzerinde RAG sistemi çalışıyor. Model yükleme hatası varsa sistem yöneticisine başvurun.
               </p>
             </div>
           </div>
@@ -647,7 +619,7 @@ function App() {
         <Sparkles className="w-4 h-4 animate-pulse" />
         <span className="text-sm font-medium">
           {connectionStatus === "connected"
-            ? "Fine-tuned AI Aktif"
+            ? `RAG AI Aktif (${ragStatus.documents} doküman)`
             : connectionStatus === "testing"
             ? "Test Ediliyor"
             : "Bağlantı Hatası"}
