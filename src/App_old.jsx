@@ -170,15 +170,26 @@ function App() {
       // POST request için form data hazırla
       const requestBody = JSON.stringify({
         question: message,
-        top_k: apiSettings.topK
+        top_k: apiSettings.topK,
+        user_id: user?.id || null
       });
+
+      const headers = {
+        "Content-Type": "application/json",
+      };
+
+      // Auth token varsa ekle
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      } else {
+        console.log('🔍 Frontend Debug: No auth token found in localStorage');
+      }
 
       // EventSource POST request için workaround
       fetch("http://localhost:8000/generate-stream", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: headers,
         body: requestBody,
       })
       .then(response => {
@@ -246,16 +257,27 @@ function App() {
   };
 
   const normalAPI = async (message) => {
+    const headers = {
+      "Content-Type": "application/json",
+    };
+
+    // Auth token varsa ekle
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    } else {
+      console.log('🔍 Frontend Debug: No auth token found for normalAPI');
+    }
+
     const response = await fetch(
       "http://localhost:8000/generate",
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: headers,
         body: JSON.stringify({
           question: message,
-          top_k: apiSettings.topK
+          top_k: apiSettings.topK,
+          user_id: user?.id || null
         }),
       }
     );
@@ -386,6 +408,7 @@ function App() {
           // Signup başarılı, signin'e geç
           setAuthMode('signin');
           setAuthForm({ email: authForm.email, password: '', fullName: '' });
+          alert('Kayıt başarılı! Şimdi giriş yapabilirsiniz.');
         }
       } else {
         alert(data.detail || 'İşlem başarısız');
@@ -435,6 +458,51 @@ function App() {
     }
   };
 
+  const loadConversationById = async (conversationId) => {
+    const token = localStorage.getItem('accessToken');
+    if (!token || !conversationId) return;
+
+    try {
+      const response = await fetch(`http://localhost:8000/history/${conversationId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.conversation) {
+          // Backend'den gelen konuşma verisini mesaj formatına çevir
+          const conversationDate = new Date(data.conversation.created_at);
+          const loadedMessages = [
+            {
+              id: 1,
+              type: "bot",
+              content: "Merhaba! Ben AI asistanınızım. Size nasıl yardımcı olabilirim?",
+              timestamp: new Date(conversationDate.getTime() - 1000), // 1 saniye önce
+            },
+            {
+              id: 2,
+              type: "user",
+              content: data.conversation.question,
+              timestamp: conversationDate,
+            },
+            {
+              id: 3,
+              type: "bot",
+              content: data.conversation.answer,
+              timestamp: new Date(conversationDate.getTime() + 1000), // 1 saniye sonra
+            }
+          ];
+          setMessages(loadedMessages);
+          setCurrentConversationId(conversationId);
+        }
+      }
+    } catch (error) {
+      console.error('Load conversation by ID error:', error);
+    }
+  };
+
   const createNewConversation = () => {
     setCurrentConversationId(null);
     setMessages([
@@ -445,6 +513,43 @@ function App() {
         timestamp: new Date(),
       },
     ]);
+  };
+
+  const deleteConversation = async (conversationId, e) => {
+    // Event'in parent'a bubbling yapmasını engelle
+    e.stopPropagation();
+    
+    const token = localStorage.getItem('accessToken');
+    if (!token || !conversationId) return;
+
+    // Onay iste
+    if (!confirm('Bu sohbeti silmek istediğinizden emin misiniz?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8000/history/${conversationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        // Listeden konuşmayı kaldır
+        setConversations(prev => prev.filter(conv => conv.id !== conversationId));
+        
+        // Eğer silinen konuşma aktif konuşma ise, yeni konuşma başlat
+        if (currentConversationId === conversationId) {
+          createNewConversation();
+        }
+      } else {
+        alert('Sohbet silinirken hata oluştu');
+      }
+    } catch (error) {
+      console.error('Delete conversation error:', error);
+      alert('Bağlantı hatası');
+    }
   };
 
   // Check for existing auth on load
@@ -518,27 +623,44 @@ function App() {
           {conversations.length > 0 ? (
             <div className="space-y-2">
               {conversations.map((conv) => (
-                <button
+                <div
                   key={conv.id}
-                  onClick={() => setCurrentConversationId(conv.id)}
-                  className={`w-full text-left p-3 rounded-lg transition-colors group ${
+                  className={`relative group rounded-lg transition-colors ${
                     currentConversationId === conv.id
                       ? isDarkMode ? 'bg-gray-700' : 'bg-purple-50'
                       : isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
                   }`}
                 >
-                  <div className={`text-sm truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {conv.question.slice(0, 50)}...
-                  </div>
-                  <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {new Date(conv.created_at).toLocaleDateString('tr-TR')}
-                  </div>
-                </button>
+                  <button
+                    onClick={() => loadConversationById(conv.id)}
+                    className="w-full text-left p-3 pr-12 rounded-lg transition-colors"
+                  >
+                    <div className={`text-sm truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {conv.question.slice(0, 50)}...
+                    </div>
+                    <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {new Date(conv.created_at).toLocaleDateString('tr-TR')}
+                    </div>
+                  </button>
+                  
+                  {/* Delete Button */}
+                  <button
+                    onClick={(e) => deleteConversation(conv.id, e)}
+                    className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-md opacity-0 group-hover:opacity-100 transition-all duration-200 ${
+                      isDarkMode 
+                        ? 'text-gray-400 hover:text-red-400 hover:bg-red-900/20' 
+                        : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
+                    }`}
+                    title="Sohbeti Sil"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               ))}
             </div>
           ) : (
             <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              Henüz sohbet geçmişiniz yok
+              {user ? 'Henüz sohbet geçmişiniz yok' : 'Sohbet geçmişi için giriş yapın'}
             </div>
           )}
         </div>
@@ -676,294 +798,376 @@ function App() {
             </div>
           </div>
         </div>
-      
-      {showSettings && (
-        <div className={`fixed top-[88px] left-0 right-0 z-15 shadow-sm fixed-settings-panel settings-transition ${
-          isDarkMode 
-            ? 'bg-gray-800/95 backdrop-blur-lg border-b border-gray-700' 
-            : 'bg-white/95 backdrop-blur-lg border-b border-gray-200'
-        }`}>
-          <div className="max-w-4xl mx-auto px-4 py-4">
-            <h3 className={`text-lg font-semibold mb-4 transition-colors duration-300 ${
-              isDarkMode ? 'text-white' : 'text-gray-800'
-            }`}>
-              API Ayarları
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
-                  isDarkMode ? 'text-gray-200' : 'text-gray-700'
-                }`}>
-                  Top K (Doküman Sayısı)
-                </label>
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  step="1"
-                  value={apiSettings.topK}
-                  onChange={(e) =>
-                    setApiSettings((prev) => ({
-                      ...prev,
-                      topK: parseInt(e.target.value),
-                    }))
-                  }
-                  className={`w-full h-2 rounded-lg appearance-none cursor-pointer transition-colors duration-300 ${
-                    isDarkMode ? 'bg-gray-600' : 'bg-gray-200'
-                  }`}
-                />
-                <div className={`flex justify-between text-xs mt-1 transition-colors duration-300 ${
-                  isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                }`}>
-                  <span>Az (1)</span>
-                  <span className="font-medium">{apiSettings.topK}</span>
-                  <span>Çok (10)</span>
+        
+        {/* Settings Panel */}
+        {showSettings && (
+          <div className={`sticky top-[72px] z-10 shadow-sm ${
+            isDarkMode 
+              ? 'bg-gray-800/95 backdrop-blur-lg border-b border-gray-700' 
+              : 'bg-white/95 backdrop-blur-lg border-b border-gray-200'
+          }`}>
+            <div className="max-w-4xl mx-auto px-4 py-4">
+              <h3 className={`text-lg font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-800'}`}>
+                API Ayarları
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                    Top K (Doküman Sayısı)
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    step="1"
+                    value={apiSettings.topK}
+                    onChange={(e) =>
+                      setApiSettings((prev) => ({
+                        ...prev,
+                        topK: parseInt(e.target.value),
+                      }))
+                    }
+                    className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
+                      isDarkMode ? 'bg-gray-600' : 'bg-gray-200'
+                    }`}
+                  />
+                  <div className={`flex justify-between text-xs mt-1 ${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
+                    <span>Az (1)</span>
+                    <span className="font-medium">{apiSettings.topK}</span>
+                    <span>Çok (10)</span>
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className={`block text-sm font-medium mb-2 transition-colors duration-300 ${
-                  isDarkMode ? 'text-gray-200' : 'text-gray-700'
-                }`}>
-                  RAG Durumu
-                </label>
-                <div className={`p-3 rounded-lg transition-colors duration-300 ${
-                  isDarkMode ? 'bg-gray-700' : 'bg-gray-100'
-                }`}>
-                  <div className="space-y-1">
-                    <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                      Sistem: <span className={ragStatus.system === 'ready' ? 'text-green-500' : 'text-red-500'}>{ragStatus.system}</span>
-                    </div>
-                    <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                      Ollama: <span className={ragStatus.ollama === 'online' ? 'text-green-500' : 'text-red-500'}>{ragStatus.ollama}</span>
-                    </div>
-                    <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                      Model: <span className={ragStatus.model ? 'text-blue-500' : 'text-red-500'}>{ragStatus.model || 'yok'}</span>
-                    </div>
-                    <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                      Dokümanlar: {ragStatus.documents}
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDarkMode ? 'text-gray-200' : 'text-gray-700'
+                  }`}>
+                    RAG Durumu
+                  </label>
+                  <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                    <div className="space-y-1">
+                      <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        Sistem: <span className={ragStatus.system === 'ready' ? 'text-green-500' : 'text-red-500'}>{ragStatus.system}</span>
+                      </div>
+                      <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        Ollama: <span className={ragStatus.ollama === 'online' ? 'text-green-500' : 'text-red-500'}>{ragStatus.ollama}</span>
+                      </div>
+                      <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        Model: <span className={ragStatus.model ? 'text-blue-500' : 'text-red-500'}>{ragStatus.model || 'yok'}</span>
+                      </div>
+                      <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        Dokümanlar: {ragStatus.documents}
+                      </div>
                     </div>
                   </div>
-                  {ragStatus.ollama === 'online' && ragStatus.system === 'ready' && (
-                    <div className={`mt-2 text-xs ${isDarkMode ? 'text-yellow-300' : 'text-orange-600'}`}>
-                      ⚠️ Model hatası varsa birkaç dakika bekleyin
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
+          </div>
+        )}
 
-            <div className={`mt-4 p-3 rounded-lg transition-colors duration-300 ${
-              isDarkMode ? 'bg-purple-900/30' : 'bg-blue-50'
-            }`}>
-              <p className={`text-sm transition-colors duration-300 ${
-                isDarkMode ? 'text-purple-200' : 'text-blue-800'
-              }`}>
-                <strong>API Endpoint:</strong>{" "}
-                http://localhost:8000/generate-stream (Streaming)
-              </p>
-              <p className={`text-xs mt-1 transition-colors duration-300 ${
-                isDarkMode ? 'text-purple-300' : 'text-blue-600'
-              }`}>
-                <span className={`font-semibold font-mono ${
-                  isDarkMode ? 'text-purple-100' : 'text-slate-800'
+        {/* Chat Container */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-4xl mx-auto px-6 py-4">
+            <div className="space-y-6">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${
+                    message.type === "user" ? "justify-end" : "justify-start"
+                  } group`}
+                >
+                  <div
+                    className={`flex items-start space-x-4 max-w-3xl ${
+                      message.type === "user"
+                        ? "flex-row-reverse space-x-reverse"
+                        : ""
+                    }`}
+                  >
+                    <div
+                      className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${
+                        message.type === "user"
+                          ? isDarkMode ? "bg-blue-600" : "bg-purple-600"
+                          : isDarkMode ? "bg-gray-600" : "bg-gray-700"
+                      }`}
+                    >
+                      {message.type === "user" ? (
+                        <User className="w-6 h-6 text-white" />
+                      ) : (
+                        <Bot className="w-6 h-6 text-white" />
+                      )}
+                    </div>
+
+                    <div
+                      className={`relative ${
+                        message.type === "user" ? "text-right" : "text-left"
+                      }`}
+                    >
+                      <div
+                        className={`inline-block px-6 py-4 rounded-2xl shadow-sm ${
+                          message.type === "user"
+                            ? isDarkMode 
+                              ? "bg-blue-600 text-white"
+                              : "bg-purple-600 text-white"
+                            : isDarkMode
+                              ? "bg-gray-700 text-gray-100 border border-gray-600"
+                              : "bg-white text-gray-900 border border-gray-200"
+                        }`}
+                      >
+                        {message.type === "bot" ? (
+                          <div className="text-sm leading-relaxed">
+                            <ReactMarkdown 
+                              components={{
+                                h1: ({children}) => <h1 className="text-lg font-bold mb-2 mt-4 first:mt-0">{children}</h1>,
+                                h2: ({children}) => <h2 className="text-base font-bold mb-2 mt-3 first:mt-0">{children}</h2>,
+                                h3: ({children}) => <h3 className="text-sm font-bold mb-1 mt-2 first:mt-0">{children}</h3>,
+                                h4: ({children}) => <h4 className="text-sm font-semibold mb-1 mt-2 first:mt-0">{children}</h4>,
+                                p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
+                                ul: ({children}) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
+                                ol: ({children}) => <ol className="list-decimal ml-4 mb-2">{children}</ol>,
+                                li: ({children}) => <li className="mb-1">{children}</li>,
+                                code: ({children}) => <code className={`px-1 py-0.5 rounded text-xs font-mono ${isDarkMode ? 'bg-gray-800 text-blue-300' : 'bg-gray-100 text-purple-600'}`}>{children}</code>,
+                                pre: ({children}) => <pre className={`p-3 rounded-lg overflow-x-auto text-xs font-mono mb-2 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>{children}</pre>,
+                                strong: ({children}) => <strong className="font-semibold">{children}</strong>,
+                                em: ({children}) => <em className="italic">{children}</em>,
+                              }}
+                            >
+                              {message.content}
+                            </ReactMarkdown>
+                            {message.isStreaming && !message.content && (
+                              <div className="mt-3">
+                                <div className="flex items-center justify-center -m-8">
+                                  <Lottie 
+                                    animationData={monkeyAnimation}
+                                    className="w-13 h-10"
+                                    loop={true}
+                                    autoplay={true}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                            {message.content}
+                          </p>
+                        )}
+                      </div>
+
+                      <div
+                        className={`flex items-center mt-2 space-x-2 text-xs ${
+                          message.type === "user" ? "justify-end" : "justify-start"
+                        } ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                      >
+                        <span>{formatTime(message.timestamp)}</span>
+                        <button
+                          onClick={() => copyMessage(message.content, message.id)}
+                          className={`opacity-0 group-hover:opacity-100 p-1 rounded transition-all duration-200 ${
+                            isDarkMode 
+                              ? 'hover:bg-gray-600' 
+                              : 'hover:bg-gray-100'
+                          }`}
+                          title="Kopyala"
+                        >
+                          {copiedId === message.id ? (
+                            <Check className="w-3 h-3 text-green-500" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+        </div>
+
+        {/* Fixed Input Area */}
+        <div className={`sticky bottom-0 z-20 ${
+          isDarkMode ? 'bg-gray-900' : 'bg-gray-50'
+        }`}>
+          <div className="max-w-4xl mx-auto px-6 py-6">
+            <div className="flex items-center space-x-3">
+              <div className="flex-1 relative">
+                <textarea
+                  ref={inputRef}
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyUp={handleKeyPress}
+                  placeholder="Mesajınızı yazınız..."
+                  rows={1}
+                  className={`w-full max-h-32 min-h-[3rem] px-6 py-4 border-2 rounded-full resize-none focus:outline-none transition-all duration-500 text-base placeholder:text-base ${
+                    showInputGlow 
+                      ? isDarkMode
+                        ? 'bg-gray-800 text-gray-100 placeholder-gray-400 border-2 border-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.5)] animate-pulse'
+                        : 'bg-white text-gray-900 placeholder-gray-500 border-2 border-purple-400 shadow-[0_0_20px_rgba(147,51,234,0.4)] animate-pulse'
+                      : isDarkMode
+                        ? 'bg-gray-800 text-gray-100 placeholder-gray-400 border-gray-700 focus:border-blue-500 hover:border-gray-600'
+                        : 'bg-white text-gray-900 placeholder-gray-500 border-gray-200 focus:border-gray-400 hover:border-gray-300 shadow-sm'
+                  }`}
+                  disabled={isLoading}
+                />
+                {inputMessage && (
+                  <div className={`absolute right-6 bottom-4 text-xs ${
+                    isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                  }`}>
+                    {inputMessage.length}/1000
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={handleSendMessage}
+                disabled={!inputMessage.trim() || isLoading}
+                className={`flex-shrink-0 w-12 h-12 text-white rounded-full flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 group ${
+                  isDarkMode 
+                    ? 'bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700' 
+                    : 'bg-black hover:bg-gray-800 disabled:bg-gray-300'
+                }`}
+              >
+                <Send className="w-5 h-5 transform group-hover:translate-x-0.5 transition-transform duration-200" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md rounded-lg shadow-xl ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`}>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className={`text-xl font-semibold ${
+                  isDarkMode ? 'text-white' : 'text-gray-900'
                 }`}>
-                  LLaMA 3.2 / Gemma3{" "}
-                </span>
-                modeli üzerinde RAG sistemi çalışıyor. Yanıtlar gerçek zamanlı streaming ile alınıyor. Streaming çalışmazsa otomatik fallback.
-              </p>
+                  {authMode === 'signin' ? 'Giriş Yap' : 'Kayıt Ol'}
+                </h2>
+                <button
+                  onClick={() => setShowAuthModal(false)}
+                  className={`p-1 rounded ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                >
+                  <X className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                </button>
+              </div>
+
+              <form onSubmit={handleAuth} className="space-y-4">
+                {authMode === 'signup' && (
+                  <div>
+                    <label className={`block text-sm font-medium mb-2 ${
+                      isDarkMode ? 'text-gray-200' : 'text-gray-700'
+                    }`}>
+                      Ad Soyad
+                    </label>
+                    <input
+                      type="text"
+                      value={authForm.fullName}
+                      onChange={(e) => setAuthForm({ ...authForm, fullName: e.target.value })}
+                      className={`w-full px-4 py-3 rounded-lg border transition-colors ${
+                        isDarkMode 
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500' 
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-500'
+                      } focus:outline-none`}
+                      placeholder="Adınızı girin"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDarkMode ? 'text-gray-200' : 'text-gray-700'
+                  }`}>
+                    E-posta
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={authForm.email}
+                    onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border transition-colors ${
+                      isDarkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500' 
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-500'
+                    } focus:outline-none`}
+                    placeholder="ornek@email.com"
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${
+                    isDarkMode ? 'text-gray-200' : 'text-gray-700'
+                  }`}>
+                    Şifre
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={authForm.password}
+                    onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
+                    className={`w-full px-4 py-3 rounded-lg border transition-colors ${
+                      isDarkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500' 
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-500'
+                    } focus:outline-none`}
+                    placeholder="••••••••"
+                    minLength="6"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className={`w-full py-3 rounded-lg font-medium transition-colors ${
+                    isDarkMode 
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                      : 'bg-purple-600 hover:bg-purple-700 text-white'
+                  }`}
+                >
+                  {authMode === 'signin' ? 'Giriş Yap' : 'Kayıt Ol'}
+                </button>
+              </form>
+
+              <div className="mt-6 text-center">
+                <button
+                  onClick={() => {
+                    setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
+                    setAuthForm({ email: '', password: '', fullName: '' });
+                  }}
+                  className={`text-sm ${
+                    isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-purple-600 hover:text-purple-700'
+                  }`}
+                >
+                  {authMode === 'signin' 
+                    ? 'Hesabınız yok mu? Kayıt olun' 
+                    : 'Zaten hesabınız var mı? Giriş yapın'
+                  }
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Chat Container */}
-      <div 
-        className={`max-w-5xl mx-auto px-6 py-4 flex flex-col transition-all duration-300 ${
-          showSettings 
-            ? 'h-[calc(100vh-280px)] mt-[200px] chat-with-settings-mobile' 
-            : 'h-[calc(100vh-120px)] mt-0'
-        }`}
-      >
-        <div className="flex-1 overflow-y-auto space-y-6 scrollbar-modern pr-4 chat-content-spacer pb-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${
-                message.type === "user" ? "justify-end" : "justify-start"
-              } group`}
-            >
-              <div
-                className={`flex items-start space-x-4 max-w-4xl ${
-                  message.type === "user"
-                    ? "flex-row-reverse space-x-reverse"
-                    : ""
-                }`}
-              >
-                <div
-                  className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-colors duration-300 ${
-                    message.type === "user"
-                      ? isDarkMode ? "bg-blue-600" : "bg-purple-600"
-                      : isDarkMode ? "bg-gray-600" : "bg-gray-700"
-                  }`}
-                >
-                  {message.type === "user" ? (
-                    <User className="w-6 h-6 text-white" />
-                  ) : (
-                    <Bot className="w-6 h-6 text-white" />
-                  )}
-                </div>
-
-                <div
-                  className={`relative ${
-                    message.type === "user" ? "text-right" : "text-left"
-                  }`}
-                >
-                  <div
-                    className={`inline-block px-6 py-4 rounded-2xl transition-all duration-200 shadow-sm ${
-                      message.type === "user"
-                        ? isDarkMode 
-                          ? "bg-blue-600 text-white"
-                          : "bg-purple-600 text-white"
-                        : isDarkMode
-                          ? "bg-gray-700 text-gray-100 border border-gray-600"
-                          : "bg-white text-gray-900 border border-gray-200"
-                    }`}
-                  >
-                    {message.type === "bot" ? (
-                      <div className="text-sm leading-relaxed">
-                        <ReactMarkdown 
-                          components={{
-                            h1: ({children}) => <h1 className="text-lg font-bold mb-2 mt-4 first:mt-0">{children}</h1>,
-                            h2: ({children}) => <h2 className="text-base font-bold mb-2 mt-3 first:mt-0">{children}</h2>,
-                            h3: ({children}) => <h3 className="text-sm font-bold mb-1 mt-2 first:mt-0">{children}</h3>,
-                            h4: ({children}) => <h4 className="text-sm font-semibold mb-1 mt-2 first:mt-0">{children}</h4>,
-                            p: ({children}) => <p className="mb-2 last:mb-0">{children}</p>,
-                            ul: ({children}) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
-                            ol: ({children}) => <ol className="list-decimal ml-4 mb-2">{children}</ol>,
-                            li: ({children}) => <li className="mb-1">{children}</li>,
-                            code: ({children}) => <code className={`px-1 py-0.5 rounded text-xs font-mono ${isDarkMode ? 'bg-gray-800 text-blue-300' : 'bg-gray-100 text-purple-600'}`}>{children}</code>,
-                            pre: ({children}) => <pre className={`p-3 rounded-lg overflow-x-auto text-xs font-mono mb-2 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>{children}</pre>,
-                            strong: ({children}) => <strong className="font-semibold">{children}</strong>,
-                            em: ({children}) => <em className="italic">{children}</em>,
-                          }}
-                        >
-                          {message.content}
-                        </ReactMarkdown>
-                        {message.isStreaming && !message.content && (
-                          <div className="mt-3">
-                            <div className="flex items-center justify-center -m-8">
-                              <Lottie 
-                                animationData={monkeyAnimation}
-                                className="w-13 h-10"
-                                loop={true}
-                                autoplay={true}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                        {message.content}
-                      </p>
-                    )}
-                  </div>
-
-                  <div
-                    className={`flex items-center mt-2 space-x-2 text-xs transition-colors duration-300 ${
-                      message.type === "user" ? "justify-end" : "justify-start"
-                    } ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
-                  >
-                    <span>{formatTime(message.timestamp)}</span>
-                    <button
-                      onClick={() => copyMessage(message.content, message.id)}
-                      className={`opacity-0 group-hover:opacity-100 p-1 rounded transition-all duration-200 ${
-                        isDarkMode 
-                          ? 'hover:bg-gray-600' 
-                          : 'hover:bg-gray-100'
-                      }`}
-                      title="Kopyala"
-                    >
-                      {copiedId === message.id ? (
-                        <Check className="w-3 h-3 text-green-500" />
-                      ) : (
-                        <Copy className="w-3 h-3" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      {/* Fixed Input Area - Gemini Style */}
-      <div className={`fixed bottom-0 left-0 right-0 z-20 transition-all duration-300 ${
-        isDarkMode 
-          ? 'bg-gray-900' 
-          : 'bg-gray-50'
-      }`}>
-        <div className="max-w-4xl mx-auto px-6 py-6">
-          <div className="flex items-center space-x-3">
-            <div className="flex-1 relative">
-              <textarea
-                ref={inputRef}
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyUp={handleKeyPress}
-                placeholder="Mesajınızı yazınız..."
-                rows={1}
-                className={`w-full max-h-32 min-h-[3rem] px-6 py-4 border-2 rounded-full resize-none focus:outline-none transition-all duration-500 text-base placeholder:text-base relative ${
-                  showInputGlow 
-                    ? isDarkMode
-                      ? 'bg-gray-800 text-gray-100 placeholder-gray-400 border-2 border-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.5)] animate-pulse'
-                      : 'bg-white text-gray-900 placeholder-gray-500 border-2 border-purple-400 shadow-[0_0_20px_rgba(147,51,234,0.4)] animate-pulse'
-                    : isDarkMode
-                      ? 'bg-gray-800 text-gray-100 placeholder-gray-400 border-gray-700 focus:border-blue-500 hover:border-gray-600'
-                      : 'bg-white text-gray-900 placeholder-gray-500 border-gray-200 focus:border-gray-400 hover:border-gray-300 shadow-sm'
-                }`}
-                disabled={isLoading}
-              />
-              {inputMessage && (
-                <div className={`absolute right-6 bottom-4 text-xs transition-colors duration-300 ${
-                  isDarkMode ? 'text-gray-500' : 'text-gray-400'
-                }`}>
-                  {inputMessage.length}/1000
-                </div>
-              )}
-            </div>
-            <button
-              onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || isLoading}
-              className={`flex-shrink-0 w-12 h-12 text-white rounded-full flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200 group ${
-                isDarkMode 
-                  ? 'bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700' 
-                  : 'bg-black hover:bg-gray-800 disabled:bg-gray-300'
-              }`}
-            >
-              <Send className="w-5 h-5 transform group-hover:translate-x-0.5 transition-transform duration-200" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className={`fixed bottom-6 right-6 flex items-center space-x-2 text-white px-4 py-2 rounded-full shadow-lg transition-colors duration-300 ${
+      {/* Status Badge */}
+      <div className={`fixed bottom-6 right-6 flex items-center space-x-2 text-white px-4 py-2 rounded-full shadow-lg ${
         isDarkMode ? 'bg-blue-600' : 'bg-purple-600'
       }`}>
         <Sparkles className="w-4 h-4 animate-pulse" />
         <span className="text-sm font-medium">
           {connectionStatus === "connected"
-            ? `RAG AI Streaming Aktif (${ragStatus.documents} doküman)`
+            ? `RAG AI Aktif (${ragStatus.documents} doküman)`
             : connectionStatus === "testing"
             ? "Test Ediliyor"
             : "Bağlantı Hatası"}
         </span>
       </div>
-    </div>
+    </div>  
   );
 }
 
