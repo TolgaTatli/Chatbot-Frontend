@@ -15,6 +15,8 @@ import {
 import "./App.css";
 import deceLogo from "./assets/deceLogo.png";
 import ReactMarkdown from 'react-markdown';
+import Lottie from 'lottie-react';
+import monkeyAnimation from './assets/Tenor-Monkey.json';
 
 function App() {
   const [messages, setMessages] = useState([
@@ -82,32 +84,148 @@ function App() {
     setInputMessage("");
     setIsLoading(true);
 
+    // Bot mesajı için placeholder oluştur
+    const botMessageId = Date.now() + 1;
+    const initialBotMessage = {
+      id: botMessageId,
+      type: "bot",
+      content: "",
+      timestamp: new Date(),
+      isStreaming: true,
+    };
+
+    setMessages((prev) => [...prev, initialBotMessage]);
+
     try {
-      const response = await callChatAPI(inputMessage);
+      // Streaming API'yi çağır - dönen değeri kullanmıyoruz çünkü onChunk callback ile güncelliyoruz
+      await callChatAPI(inputMessage, (partialContent) => {
+        // Streaming sırasında mesajı güncelle
+        setMessages((prev) => 
+          prev.map((msg) => 
+            msg.id === botMessageId 
+              ? { ...msg, content: partialContent, isStreaming: true }
+              : msg
+          )
+        );
+      });
 
-      const botMessage = {
-        id: Date.now() + 1,
-        type: "bot",
-        content: response,
-        timestamp: new Date(),
-      };
+      // Streaming tamamlandığında sadece isStreaming'i false yap
+      setMessages((prev) => 
+        prev.map((msg) => 
+          msg.id === botMessageId 
+            ? { ...msg, isStreaming: false }
+            : msg
+        )
+      );
 
-      setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
       console.error("API Error:", error);
-      const errorMessage = {
-        id: Date.now() + 1,
-        type: "bot",
-        content: `Üzgünüm, API bağlantısında bir hata oluştu: ${error.message}. Lütfen tekrar deneyin.`,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+      const errorMessage = `Üzgünüm, API bağlantısında bir hata oluştu: ${error.message}. Lütfen tekrar deneyin.`;
+      
+      setMessages((prev) => 
+        prev.map((msg) => 
+          msg.id === botMessageId 
+            ? { ...msg, content: errorMessage, isStreaming: false }
+            : msg
+        )
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
-  const callChatAPI = async (message) => {
+  const callChatAPI = async (message, onChunk) => {
+    // Önce streaming endpoint'ini dene
+    try {
+      return await streamingAPI(message, onChunk);
+    } catch (streamError) {
+      console.warn("Streaming API başarısız, fallback API'ye geçiliyor:", streamError);
+      // Fallback olarak normal API'yi kullan
+      return await normalAPI(message);
+    }
+  };
+
+  const streamingAPI = async (message, onChunk) => {
+    return new Promise((resolve, reject) => {
+      // POST request için form data hazırla
+      const requestBody = JSON.stringify({
+        question: message,
+        top_k: apiSettings.topK
+      });
+
+      // EventSource POST request için workaround
+      fetch("http://localhost:8000/generate-stream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: requestBody,
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let fullAnswer = '';
+
+        const processStream = () => {
+          reader.read().then(({ done, value }) => {
+            if (done) {
+              // Stream tamamlandı - sadece resolve et, ekstra yanıt ekleme
+              resolve();
+              return;
+            }
+
+            // Gelen veriyi buffer'a ekle
+            buffer += decoder.decode(value, { stream: true });
+            
+            // Satır satır işle
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || ''; // Son eksik satırı buffer'da tut
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(line.slice(6)); // 'data: ' kısmını çıkar
+                  
+                  if (data.type === 'start') {
+                    console.log('Streaming yanıt başladı...');
+                  } 
+                  else if (data.type === 'chunk') {
+                    fullAnswer += data.text;
+                    if (onChunk) {
+                      onChunk(fullAnswer);
+                    }
+                  } 
+                  else if (data.type === 'end') {
+                    // Kaynaklar ve güven skoru kaldırıldı - sadece ana yanıtı kullan
+                    // Ekstra bilgi eklenmeyecek
+                  }
+                  else if (data.type === 'error') {
+                    reject(new Error(data.message || 'Streaming hatası'));
+                    return;
+                  }
+                } catch (e) {
+                  console.warn('JSON parse hatası:', e, 'Line:', line);
+                }
+              }
+            }
+
+            // Bir sonraki chunk'ı oku
+            processStream();
+          }).catch(reject);
+        };
+
+        processStream();
+      })
+      .catch(reject);
+    });
+  };
+
+  const normalAPI = async (message) => {
     const response = await fetch(
       "http://localhost:8000/generate",
       {
@@ -116,8 +234,8 @@ function App() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          question: message, // RAG API formatı
-          top_k: apiSettings.topK // Ayarlardan alınan doküman sayısı
+          question: message,
+          top_k: apiSettings.topK
         }),
       }
     );
@@ -127,7 +245,6 @@ function App() {
     }
 
     const data = await response.json();
-    // RAG API'den gelen yanıt
     let responseText = data.answer || "Yanıt alınamadı";
 
     // Ollama hatası kontrolü
@@ -135,7 +252,6 @@ function App() {
       responseText = "🔧 Model yükleme hatası. RAG sistemi çalışıyor ancak AI modeli yüklenemiyor. Lütfen sistem yöneticisine başvurun veya birkaç dakika bekleyip tekrar deneyin.";
     }
 
-    // Boş yanıt kontrolü
     if (!responseText || responseText.length < 10) {
       responseText = "Yanıt oluşturulamadı, lütfen soruyu yeniden deneyin.";
     }
@@ -146,7 +262,8 @@ function App() {
   const testApiConnection = async () => {
     setConnectionStatus("testing");
     try {
-      await callChatAPI("Test mesajı");
+      // Streaming test için kısa bir mesaj gönder
+      await callChatAPI("Test mesajı", null);
       setConnectionStatus("connected");
       return true;
     } catch (error) {
@@ -403,7 +520,7 @@ function App() {
                 isDarkMode ? 'text-purple-200' : 'text-blue-800'
               }`}>
                 <strong>API Endpoint:</strong>{" "}
-                http://localhost:8000/generate
+                http://localhost:8000/generate-stream (Streaming)
               </p>
               <p className={`text-xs mt-1 transition-colors duration-300 ${
                 isDarkMode ? 'text-purple-300' : 'text-blue-600'
@@ -411,9 +528,9 @@ function App() {
                 <span className={`font-semibold font-mono ${
                   isDarkMode ? 'text-purple-100' : 'text-slate-800'
                 }`}>
-                  LLaMA 3.2{" "}
+                  LLaMA 3.2 / Gemma3{" "}
                 </span>
-                modeli üzerinde RAG sistemi çalışıyor. Model yükleme hatası varsa sistem yöneticisine başvurun.
+                modeli üzerinde RAG sistemi çalışıyor. Yanıtlar gerçek zamanlı streaming ile alınıyor. Streaming çalışmazsa otomatik fallback.
               </p>
             </div>
           </div>
@@ -493,6 +610,18 @@ function App() {
                         >
                           {message.content}
                         </ReactMarkdown>
+                        {message.isStreaming && !message.content && (
+                          <div className="mt-3">
+                            <div className="flex items-center justify-center -m-8">
+                              <Lottie 
+                                animationData={monkeyAnimation}
+                                className="w-13 h-10"
+                                loop={true}
+                                autoplay={true}
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">
@@ -527,41 +656,6 @@ function App() {
               </div>
             </div>
           ))}
-
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="flex items-start space-x-4 max-w-4xl">
-                <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow-lg transition-colors duration-300 ${
-                  isDarkMode ? 'bg-gray-600' : 'bg-gray-700'
-                }`}>
-                  <Bot className="w-6 h-6 text-white" />
-                </div>
-                <div className={`rounded-2xl px-6 py-4 shadow-sm ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border border-gray-600' 
-                    : 'bg-white border border-gray-200'
-                }`}>
-                  <div className="flex space-x-2">
-                    <div className={`w-2 h-2 rounded-full animate-bounce ${
-                      isDarkMode ? 'bg-gray-400' : 'bg-gray-500'
-                    }`}></div>
-                    <div
-                      className={`w-2 h-2 rounded-full animate-bounce ${
-                        isDarkMode ? 'bg-gray-400' : 'bg-gray-500'
-                      }`}
-                      style={{ animationDelay: "0.1s" }}
-                    ></div>
-                    <div
-                      className={`w-2 h-2 rounded-full animate-bounce ${
-                        isDarkMode ? 'bg-gray-400' : 'bg-gray-500'
-                      }`}
-                      style={{ animationDelay: "0.2s" }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           <div ref={messagesEndRef} />
         </div>
@@ -619,7 +713,7 @@ function App() {
         <Sparkles className="w-4 h-4 animate-pulse" />
         <span className="text-sm font-medium">
           {connectionStatus === "connected"
-            ? `RAG AI Aktif (${ragStatus.documents} doküman)`
+            ? `RAG AI Streaming Aktif (${ragStatus.documents} doküman)`
             : connectionStatus === "testing"
             ? "Test Ediliyor"
             : "Bağlantı Hatası"}
