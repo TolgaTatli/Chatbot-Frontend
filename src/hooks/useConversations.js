@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react';
 import { conversationsAPI } from '../services/api';
 import { convertConversationToMessages } from '../utils/helpers';
-
 export const useConversations = (user) => {
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
-
-  // Load all conversations
   const loadConversations = async () => {
     if (!user) return;
     
@@ -17,11 +14,8 @@ export const useConversations = (user) => {
       console.error('Load conversations error:', error);
     }
   };
-
-  // Load conversation by ID
   const loadConversationById = async (conversationId, setMessages) => {
     if (!user || !conversationId) return;
-
     try {
       const conversation = await conversationsAPI.getById(conversationId);
       if (conversation) {
@@ -33,23 +27,17 @@ export const useConversations = (user) => {
       console.error('Load conversation by ID error:', error);
     }
   };
-
-  // Delete conversation
   const deleteConversation = async (conversationId, createNewConversation) => {
     if (!user || !conversationId) return false;
-
     if (!confirm('Bu sohbeti silmek istediğinizden emin misiniz?')) {
       return false;
     }
-
     try {
       const success = await conversationsAPI.delete(conversationId);
       
       if (success) {
-        // Remove from list
         setConversations(prev => prev.filter(conv => conv.id !== conversationId));
         
-        // If deleted conversation was active, start new conversation
         if (currentConversationId === conversationId) {
           createNewConversation();
         }
@@ -65,8 +53,6 @@ export const useConversations = (user) => {
       return false;
     }
   };
-
-  // Create new conversation
   const createNewConversation = (setMessages) => {
     setCurrentConversationId(null);
     setMessages([
@@ -78,8 +64,6 @@ export const useConversations = (user) => {
       },
     ]);
   };
-
-  // Load conversations when user changes
   useEffect(() => {
     if (user) {
       loadConversations();
@@ -88,7 +72,6 @@ export const useConversations = (user) => {
       setCurrentConversationId(null);
     }
   }, [user]);
-
   return {
     conversations,
     currentConversationId,

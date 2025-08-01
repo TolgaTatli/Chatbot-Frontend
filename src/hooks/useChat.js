@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { chatAPI } from '../services/api';
 import { CONNECTION_STATUS } from '../utils/constants';
-
 export const useChat = (user, apiSettings) => {
   const [messages, setMessages] = useState([
     {
@@ -21,8 +20,6 @@ export const useChat = (user, apiSettings) => {
     documents: 0,
     model: 'unknown'
   });
-
-  // Test API connection
   const testConnection = async () => {
     setConnectionStatus(CONNECTION_STATUS.TESTING);
     try {
@@ -35,28 +32,21 @@ export const useChat = (user, apiSettings) => {
       return false;
     }
   };
-
-  // Check RAG status
   const checkRAGStatus = async () => {
     const status = await chatAPI.getRAGStatus();
     setRagStatus(status);
   };
-
-  // Send message
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
-
     const userMessage = {
       id: Date.now(),
       type: "user",
       content: inputMessage,
       timestamp: new Date(),
     };
-
     setMessages((prev) => [...prev, userMessage]);
     setInputMessage("");
     setIsLoading(true);
-
     const botMessageId = Date.now() + 1;
     const initialBotMessage = {
       id: botMessageId,
@@ -65,11 +55,8 @@ export const useChat = (user, apiSettings) => {
       timestamp: new Date(),
       isStreaming: true,
     };
-
     setMessages((prev) => [...prev, initialBotMessage]);
-
     try {
-      // Try streaming API first
       await chatAPI.streamingRequest(
         inputMessage,
         apiSettings.topK,
@@ -84,8 +71,6 @@ export const useChat = (user, apiSettings) => {
           );
         }
       );
-
-      // Complete streaming
       setMessages((prev) => 
         prev.map((msg) => 
           msg.id === botMessageId 
@@ -93,15 +78,11 @@ export const useChat = (user, apiSettings) => {
             : msg
         )
       );
-
-      // Show input glow effect
       setShowInputGlow(true);
       setTimeout(() => setShowInputGlow(false), 2000);
-
     } catch (error) {
       console.error("API Error:", error);
       
-      // Try fallback API
       try {
         const response = await chatAPI.normalRequest(inputMessage, apiSettings.topK, user?.id);
         setMessages((prev) => 
@@ -125,8 +106,6 @@ export const useChat = (user, apiSettings) => {
       setIsLoading(false);
     }
   };
-
-  // Clear chat
   const clearChat = () => {
     setMessages([
       {
@@ -137,13 +116,10 @@ export const useChat = (user, apiSettings) => {
       },
     ]);
   };
-
-  // Initialize
   useEffect(() => {
     testConnection();
     checkRAGStatus();
   }, []);
-
   return {
     messages,
     setMessages,

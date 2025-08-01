@@ -1,10 +1,7 @@
 import { useTheme } from "../../context/ThemeContext";
-
 const SettingsPanel = ({ showSettings, apiSettings, setApiSettings, ragStatus }) => {
   const { isDarkMode } = useTheme();
-
   if (!showSettings) return null;
-
   return (
     <div className={`sticky top-[72px] z-10 shadow-sm ${
       isDarkMode 
@@ -44,7 +41,6 @@ const SettingsPanel = ({ showSettings, apiSettings, setApiSettings, ragStatus })
               <span>Çok (10)</span>
             </div>
           </div>
-
           <div>
             <label className={`block text-sm font-medium mb-2 ${
               isDarkMode ? 'text-gray-200' : 'text-gray-700'
@@ -73,5 +69,4 @@ const SettingsPanel = ({ showSettings, apiSettings, setApiSettings, ragStatus })
     </div>
   );
 };
-
 export default SettingsPanel;

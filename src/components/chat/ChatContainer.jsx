@@ -1,6 +1,5 @@
 import MessageList from "./MessageList";
 import ChatInput from "./ChatInput";
-
 const ChatContainer = ({ 
   messages, 
   inputMessage, 
@@ -22,5 +21,4 @@ const ChatContainer = ({
     </div>
   );
 };
-
 export default ChatContainer;

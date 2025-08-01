@@ -2,7 +2,6 @@ import { X } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import { authAPI } from "../../services/auth";
-
 const AuthModal = ({ onLoadConversations }) => {
   const { isDarkMode } = useTheme();
   const { 
@@ -14,7 +13,6 @@ const AuthModal = ({ onLoadConversations }) => {
     login, 
     closeAuthModal 
   } = useAuth();
-
   const handleAuth = async (e) => {
     e.preventDefault();
     
@@ -35,14 +33,11 @@ const AuthModal = ({ onLoadConversations }) => {
       alert(error.message);
     }
   };
-
   const switchMode = () => {
     setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
     setAuthForm({ email: '', password: '', fullName: '' });
   };
-
   if (!showAuthModal) return null;
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className={`w-full max-w-md rounded-lg shadow-xl ${
@@ -62,7 +57,6 @@ const AuthModal = ({ onLoadConversations }) => {
               <X className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
             </button>
           </div>
-
           <form onSubmit={handleAuth} className="space-y-4">
             {authMode === 'signup' && (
               <div>
@@ -84,7 +78,6 @@ const AuthModal = ({ onLoadConversations }) => {
                 />
               </div>
             )}
-
             <div>
               <label className={`block text-sm font-medium mb-2 ${
                 isDarkMode ? 'text-gray-200' : 'text-gray-700'
@@ -104,7 +97,6 @@ const AuthModal = ({ onLoadConversations }) => {
                 placeholder="ornek@email.com"
               />
             </div>
-
             <div>
               <label className={`block text-sm font-medium mb-2 ${
                 isDarkMode ? 'text-gray-200' : 'text-gray-700'
@@ -125,7 +117,6 @@ const AuthModal = ({ onLoadConversations }) => {
                 minLength="6"
               />
             </div>
-
             <button
               type="submit"
               className={`w-full py-3 rounded-lg font-medium transition-colors ${
@@ -137,7 +128,6 @@ const AuthModal = ({ onLoadConversations }) => {
               {authMode === 'signin' ? 'Giriş Yap' : 'Kayıt Ol'}
             </button>
           </form>
-
           <div className="mt-6 text-center">
             <button
               onClick={switchMode}
@@ -156,5 +146,4 @@ const AuthModal = ({ onLoadConversations }) => {
     </div>
   );
 };
-
 export default AuthModal;

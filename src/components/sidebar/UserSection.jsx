@@ -1,11 +1,9 @@
 import { User, LogIn, LogOut } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
-
 const UserSection = () => {
   const { isDarkMode } = useTheme();
   const { user, logout, openAuthModal } = useAuth();
-
   if (user) {
     return (
       <div className="space-y-3">
@@ -33,7 +31,6 @@ const UserSection = () => {
       </div>
     );
   }
-
   return (
     <button
       onClick={() => openAuthModal('signin')}
@@ -48,5 +45,4 @@ const UserSection = () => {
     </button>
   );
 };
-
 export default UserSection;

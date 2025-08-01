@@ -1,9 +1,7 @@
 import { Sparkles } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
-
 const StatusBadge = ({ connectionStatus, ragStatus }) => {
   const { isDarkMode } = useTheme();
-
   return (
     <div className={`fixed bottom-6 right-6 flex items-center space-x-2 text-white px-4 py-2 rounded-full shadow-lg ${
       isDarkMode ? 'bg-blue-600' : 'bg-purple-600'
@@ -19,5 +17,4 @@ const StatusBadge = ({ connectionStatus, ragStatus }) => {
     </div>
   );
 };
-
 export default StatusBadge;

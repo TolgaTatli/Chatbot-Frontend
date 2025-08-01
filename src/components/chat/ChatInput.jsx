@@ -1,7 +1,6 @@
 import { Send } from "lucide-react";
 import { useRef } from "react";
 import { useTheme } from "../../context/ThemeContext";
-
 const ChatInput = ({ 
   inputMessage, 
   setInputMessage, 
@@ -11,14 +10,12 @@ const ChatInput = ({
 }) => {
   const { isDarkMode } = useTheme();
   const inputRef = useRef(null);
-
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSendMessage();
     }
   };
-
   return (
     <div className={`sticky bottom-0 z-20 ${
       isDarkMode ? 'bg-gray-900' : 'bg-gray-50'
@@ -68,5 +65,4 @@ const ChatInput = ({
     </div>
   );
 };
-
 export default ChatInput;

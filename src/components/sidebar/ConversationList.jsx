@@ -1,6 +1,5 @@
 import { Trash2 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
-
 const ConversationList = ({ 
   conversations, 
   currentConversationId, 
@@ -9,12 +8,10 @@ const ConversationList = ({
   user 
 }) => {
   const { isDarkMode } = useTheme();
-
   const handleDelete = (conversationId, e) => {
     e.stopPropagation();
     onDeleteConversation(conversationId);
   };
-
   if (conversations.length === 0) {
     return (
       <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -22,7 +19,6 @@ const ConversationList = ({
       </div>
     );
   }
-
   return (
     <div className="space-y-2">
       {conversations.map((conv) => (
@@ -63,5 +59,4 @@ const ConversationList = ({
     </div>
   );
 };
-
 export default ConversationList;

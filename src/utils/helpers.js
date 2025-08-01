@@ -1,12 +1,9 @@
-// Format time for display
 export const formatTime = (timestamp) => {
   return timestamp.toLocaleTimeString("tr-TR", {
     hour: "2-digit",
     minute: "2-digit",
   });
 };
-
-// Copy text to clipboard
 export const copyToClipboard = async (text) => {
   try {
     await navigator.clipboard.writeText(text);
@@ -16,16 +13,12 @@ export const copyToClipboard = async (text) => {
     return false;
   }
 };
-
-// Generate default welcome message
 export const getWelcomeMessage = () => ({
   id: 1,
   type: "bot",
   content: "Merhaba! Ben AI asistanınızım. Size nasıl yardımcı olabilirim?",
   timestamp: new Date(),
 });
-
-// Convert conversation data to messages format
 export const convertConversationToMessages = (conversation) => {
   const conversationDate = new Date(conversation.created_at);
   

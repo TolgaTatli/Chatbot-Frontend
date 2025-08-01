@@ -5,11 +5,9 @@ import { formatTime, copyToClipboard } from "../../utils/helpers";
 import ReactMarkdown from 'react-markdown';
 import Lottie from 'lottie-react';
 import monkeyAnimation from '../../assets/monkey.json';
-
 const Message = ({ message }) => {
   const { isDarkMode } = useTheme();
   const [copiedId, setCopiedId] = useState(null);
-
   const handleCopy = async () => {
     const success = await copyToClipboard(message.content);
     if (success) {
@@ -17,7 +15,6 @@ const Message = ({ message }) => {
       setTimeout(() => setCopiedId(null), 2000);
     }
   };
-
   return (
     <div
       className={`flex ${
@@ -44,7 +41,6 @@ const Message = ({ message }) => {
             <Bot className="w-6 h-6 text-white" />
           )}
         </div>
-
         <div
           className={`relative ${
             message.type === "user" ? "text-right" : "text-left"
@@ -100,7 +96,6 @@ const Message = ({ message }) => {
               </p>
             )}
           </div>
-
           <div
             className={`flex items-center mt-2 space-x-2 text-xs ${
               message.type === "user" ? "justify-end" : "justify-start"
@@ -128,5 +123,4 @@ const Message = ({ message }) => {
     </div>
   );
 };
-
 export default Message;

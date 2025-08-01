@@ -1,7 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-
 const AuthContext = createContext();
-
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -9,14 +7,11 @@ export const useAuth = () => {
   }
   return context;
 };
-
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('signin');
   const [authForm, setAuthForm] = useState({ email: '', password: '', fullName: '' });
-
-  // Check for existing auth on load
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     const savedUser = localStorage.getItem('user');
@@ -25,14 +20,12 @@ export const AuthProvider = ({ children }) => {
       setUser(JSON.parse(savedUser));
     }
   }, []);
-
   const login = (userData, token) => {
     setUser(userData);
     localStorage.setItem('accessToken', token);
     localStorage.setItem('user', JSON.stringify(userData));
     setShowAuthModal(false);
   };
-
   const logout = async () => {
     try {
       await fetch('http://localhost:8000/auth/signout', {
@@ -49,17 +42,14 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('user');
     }
   };
-
   const openAuthModal = (mode = 'signin') => {
     setAuthMode(mode);
     setShowAuthModal(true);
   };
-
   const closeAuthModal = () => {
     setShowAuthModal(false);
     setAuthForm({ email: '', password: '', fullName: '' });
   };
-
   return (
     <AuthContext.Provider value={{
       user,
