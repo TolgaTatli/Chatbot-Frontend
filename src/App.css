@@ -32,6 +32,51 @@
   75% { transform: translateY(-1px) rotate(-3deg); }
 }
 
+/* Input glow animation when response completes */
+@keyframes inputGlow {
+  0% {
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+  }
+  25% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.6), 0 0 30px rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.8), 0 0 35px rgba(59, 130, 246, 0.5);
+  }
+  75% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.6), 0 0 30px rgba(59, 130, 246, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+  }
+}
+
+@keyframes inputGlowPurple {
+  0% {
+    box-shadow: 0 0 5px rgba(147, 51, 234, 0.3);
+  }
+  25% {
+    box-shadow: 0 0 20px rgba(147, 51, 234, 0.6), 0 0 30px rgba(147, 51, 234, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(147, 51, 234, 0.8), 0 0 35px rgba(147, 51, 234, 0.5);
+  }
+  75% {
+    box-shadow: 0 0 20px rgba(147, 51, 234, 0.6), 0 0 30px rgba(147, 51, 234, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(147, 51, 234, 0.3);
+  }
+}
+
+.input-glow-animation {
+  animation: inputGlow 2s ease-in-out;
+}
+
+.input-glow-animation-purple {
+  animation: inputGlowPurple 2s ease-in-out;
+}
+
 /* Scrollbar with glow effect */
 .scrollbar-glow::-webkit-scrollbar {
   width: 10px;

@@ -45,6 +45,7 @@ function App() {
     model: 'unknown'
   }); // RAG sistem durumu
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [showInputGlow, setShowInputGlow] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -117,6 +118,10 @@ function App() {
             : msg
         )
       );
+
+      // Input glow efektini başlat
+      setShowInputGlow(true);
+      setTimeout(() => setShowInputGlow(false), 2000);
 
     } catch (error) {
       console.error("API Error:", error);
@@ -677,10 +682,14 @@ function App() {
                 onKeyUp={handleKeyPress}
                 placeholder="Mesajınızı yazınız..."
                 rows={1}
-                className={`w-full max-h-32 min-h-[3rem] px-6 py-4 border-2 rounded-full resize-none focus:outline-none transition-all duration-200 text-base placeholder:text-base ${
-                  isDarkMode
-                    ? 'bg-gray-800 text-gray-100 placeholder-gray-400 border-gray-700 focus:border-blue-500 hover:border-gray-600'
-                    : 'bg-white text-gray-900 placeholder-gray-500 border-gray-200 focus:border-gray-400 hover:border-gray-300 shadow-sm'
+                className={`w-full max-h-32 min-h-[3rem] px-6 py-4 border-2 rounded-full resize-none focus:outline-none transition-all duration-500 text-base placeholder:text-base relative ${
+                  showInputGlow 
+                    ? isDarkMode
+                      ? 'bg-gray-800 text-gray-100 placeholder-gray-400 border-2 border-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.5)] animate-pulse'
+                      : 'bg-white text-gray-900 placeholder-gray-500 border-2 border-purple-400 shadow-[0_0_20px_rgba(147,51,234,0.4)] animate-pulse'
+                    : isDarkMode
+                      ? 'bg-gray-800 text-gray-100 placeholder-gray-400 border-gray-700 focus:border-blue-500 hover:border-gray-600'
+                      : 'bg-white text-gray-900 placeholder-gray-500 border-gray-200 focus:border-gray-400 hover:border-gray-300 shadow-sm'
                 }`}
                 disabled={isLoading}
               />
