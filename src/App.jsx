@@ -43,6 +43,7 @@ const AppContent = () => {
     showInputGlow,
     connectionStatus,
     ragStatus,
+    currentConversationId: chatConversationId,
     sendMessage,
     clearChat
   } = useChat(user, apiSettings);

@@ -20,6 +20,7 @@ export const useChat = (user, apiSettings) => {
     documents: 0,
     model: 'unknown'
   });
+  const [currentConversationId, setCurrentConversationId] = useState(null);
   const testConnection = async () => {
     setConnectionStatus(CONNECTION_STATUS.TESTING);
     try {
@@ -38,15 +39,21 @@ export const useChat = (user, apiSettings) => {
   };
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
+    
     const userMessage = {
       id: Date.now(),
       type: "user",
       content: inputMessage,
       timestamp: new Date(),
     };
+    
+    // Question'ı sakla
+    const currentQuestion = inputMessage;
+    
     setMessages((prev) => [...prev, userMessage]);
     setInputMessage("");
     setIsLoading(true);
+    
     const botMessageId = Date.now() + 1;
     const initialBotMessage = {
       id: botMessageId,
@@ -55,13 +62,18 @@ export const useChat = (user, apiSettings) => {
       timestamp: new Date(),
       isStreaming: true,
     };
+    
     setMessages((prev) => [...prev, initialBotMessage]);
+    
+    let finalAnswer = '';
+    
     try {
-      await chatAPI.streamingRequest(
-        inputMessage,
+      const streamResult = await chatAPI.streamingRequest(
+        currentQuestion,
         apiSettings.topK,
         user?.id,
         (partialContent) => {
+          finalAnswer = partialContent; // Son answer'ı sakla
           setMessages((prev) => 
             prev.map((msg) => 
               msg.id === botMessageId 
@@ -69,8 +81,23 @@ export const useChat = (user, apiSettings) => {
                 : msg
             )
           );
+        },
+        (conversationId) => {
+          // Conversation kaydedildiğinde ID'yi sakla ve event dispatch et
+          setCurrentConversationId(conversationId);
+          console.log('✅ Yeni conversation kaydedildi:', conversationId);
+          
+          // Custom event dispatch et - question ve answer da gönder
+          window.dispatchEvent(new CustomEvent('conversationSaved', { 
+            detail: { 
+              conversationId,
+              question: currentQuestion,
+              answer: finalAnswer
+            } 
+          }));
         }
       );
+      
       setMessages((prev) => 
         prev.map((msg) => 
           msg.id === botMessageId 
@@ -78,20 +105,45 @@ export const useChat = (user, apiSettings) => {
             : msg
         )
       );
+      
+      // Conversation bilgilerini logla
+      if (streamResult.conversationSaved) {
+        console.log('✅ Conversation başarıyla kaydedildi:', streamResult.conversationId);
+      } else {
+        console.warn('⚠️ Conversation kaydedilemedi');
+      }
+      
       setShowInputGlow(true);
       setTimeout(() => setShowInputGlow(false), 2000);
+      
     } catch (error) {
       console.error("API Error:", error);
       
       try {
-        const response = await chatAPI.normalRequest(inputMessage, apiSettings.topK, user?.id);
+        const response = await chatAPI.normalRequest(currentQuestion, apiSettings.topK, user?.id);
+        finalAnswer = response.answer;
+        
         setMessages((prev) => 
           prev.map((msg) => 
             msg.id === botMessageId 
-              ? { ...msg, content: response, isStreaming: false }
+              ? { ...msg, content: response.answer, isStreaming: false }
               : msg
           )
         );
+        
+        // Normal request için de conversation kontrolü
+        if (response.conversationSaved) {
+          setCurrentConversationId(response.conversationId);
+          console.log('✅ Fallback conversation kaydedildi:', response.conversationId);
+          window.dispatchEvent(new CustomEvent('conversationSaved', { 
+            detail: { 
+              conversationId: response.conversationId,
+              question: currentQuestion,
+              answer: response.answer
+            } 
+          }));
+        }
+        
       } catch (fallbackError) {
         const errorMessage = `Üzgünüm, API bağlantısında bir hata oluştu: ${fallbackError.message}. Lütfen tekrar deneyin.`;
         setMessages((prev) => 
@@ -115,6 +167,7 @@ export const useChat = (user, apiSettings) => {
         timestamp: new Date(),
       },
     ]);
+    setCurrentConversationId(null); // Yeni chat başlarken conversation ID'yi temizle
   };
   useEffect(() => {
     testConnection();
@@ -147,6 +200,7 @@ export const useChat = (user, apiSettings) => {
     showInputGlow,
     connectionStatus,
     ragStatus,
+    currentConversationId,
     sendMessage,
     clearChat,
     testConnection,

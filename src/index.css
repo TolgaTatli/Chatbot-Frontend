@@ -112,7 +112,7 @@ html {
     filter: blur(0px);
   }
   50% {
-    opacity: 0;
+    opacity:  0;
     filter: blur(15px);
   }
   100% {
