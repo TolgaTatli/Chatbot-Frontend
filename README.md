@@ -9,7 +9,6 @@ src/
 ├── components/           # React componentleri
 │   ├── common/          # Ortak componentler
 │   │   ├── Header.jsx   # Ana başlık
-│   │   ├── StatusBadge.jsx  # Durum rozeti
 │   │   └── SettingsPanel.jsx # Ayarlar paneli
 │   ├── chat/            # Chat ile ilgili componentler
 │   │   ├── ChatContainer.jsx # Chat ana container
@@ -45,9 +44,11 @@ src/
 - **Modern Component Mimarisi**: Modüler ve yeniden kullanılabilir componentler
 - **Real-time Streaming**: Server-Sent Events ile canlı mesaj akışı
 - **Kullanıcı Kimlik Doğrulama**: JWT tabanlı giriş/kayıt sistemi
+- **Akıllı Chat Temizleme**: Login sonrası önceki oturum mesajları otomatik temizlenir
 - **Konuşma Geçmişi**: Kullanıcı bazlı konuşma kaydetme ve yükleme
-- **Dark/Light Tema**: Kullanıcı tercihi ile tema değiştirme
+- **Dark/Light Tema**: LocalStorage ile kalıcı tema tercihi
 - **Responsive Tasarım**: Mobil uyumlu ChatGPT-style arayüz
+- **Wave Animasyonları**: Conversation geçişlerinde güzel animasyonlar
 - **Context API**: Global state yönetimi
 - **Custom Hooks**: Mantık ayrıştırması ve yeniden kullanım
 

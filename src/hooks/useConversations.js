@@ -72,6 +72,21 @@ export const useConversations = (user) => {
       setCurrentConversationId(null);
     }
   }, [user]);
+  
+  // Login sonrası chat temizleme event'ini dinle
+  useEffect(() => {
+    const handleClearChat = () => {
+      setConversations([]);
+      setCurrentConversationId(null);
+    };
+    
+    window.addEventListener('clearChat', handleClearChat);
+    
+    return () => {
+      window.removeEventListener('clearChat', handleClearChat);
+    };
+  }, []);
+  
   return {
     conversations,
     currentConversationId,

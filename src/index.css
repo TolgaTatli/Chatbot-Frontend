@@ -28,6 +28,17 @@ html {
   }
 }
 
+@keyframes slide-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes bounce-in {
   0% {
     opacity: 0;
@@ -45,6 +56,41 @@ html {
   }
 }
 
+@keyframes wave-dot {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes wave-transition {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
 .animate-fade-in-up {
   animation: fade-in-up 0.4s ease-out forwards;
 }
@@ -53,25 +99,72 @@ html {
   animation: slide-in-left 0.3s ease-out forwards;
 }
 
+.animate-slide-in-up {
+  animation: slide-in-up 0.5s ease-out forwards;
+}
+
 .animate-bounce-in {
   animation: bounce-in 0.5s ease-out forwards;
 }
 
+.animate-wave-dot {
+  animation: wave-dot 1.4s ease-in-out infinite;
+}
+
+.animate-wave-transition {
+  animation: wave-transition 0.6s ease-in-out forwards;
+}
+
+.animate-ripple {
+  animation: ripple 0.6s ease-out forwards;
+}
+
+.animation-delay-0 {
+  animation-delay: 0ms;
+}
+
+.animation-delay-50 {
+  animation-delay: 50ms;
+}
+
 .animation-delay-100 {
-  animation-delay: 0.1s;
+  animation-delay: 100ms;
+}
+
+.animation-delay-150 {
+  animation-delay: 150ms;
 }
 
 .animation-delay-200 {
-  animation-delay: 0.2s;
+  animation-delay: 200ms;
+}
+
+.animation-delay-250 {
+  animation-delay: 250ms;
 }
 
 .animation-delay-300 {
-  animation-delay: 0.3s;
+  animation-delay: 300ms;
 }
 
-/* Smooth transitions for theme changes */
-* {
+.animation-delay-400 {
+  animation-delay: 400ms;
+}
+
+.animation-delay-500 {
+  animation-delay: 500ms;
+}
+
+/* Smooth transitions for theme changes - only for specific elements */
+.theme-transition, 
+.theme-transition * {
   transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, border-color 0.3s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+/* Override for elements that shouldn't have transitions */
+.no-transition, 
+.no-transition * {
+  transition: none !important;
 }
 
 /* Custom scrollbar for sidebar */

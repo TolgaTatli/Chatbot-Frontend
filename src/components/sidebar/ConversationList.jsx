@@ -21,18 +21,19 @@ const ConversationList = ({
   }
   return (
     <div className="space-y-2">
-      {conversations.map((conv) => (
+      {conversations.map((conv, index) => (
         <div
           key={conv.id}
-          className={`relative group rounded-lg transition-colors ${
+          className={`relative group rounded-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-95 animate-fade-in-up ${
             currentConversationId === conv.id
-              ? isDarkMode ? 'bg-gray-700' : 'bg-purple-50'
+              ? isDarkMode ? 'bg-gray-700 shadow-lg' : 'bg-purple-50 shadow-lg'
               : isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
           }`}
+          style={{ animationDelay: `${index * 50}ms` }}
         >
           <button
             onClick={() => onLoadConversation(conv.id)}
-            className="w-full text-left p-3 pr-12 rounded-lg transition-colors"
+            className="w-full text-left p-3 pr-12 rounded-lg transition-all duration-200 hover:bg-opacity-80"
           >
             <div className={`text-sm truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
               {conv.question.slice(0, 50)}...

@@ -15,12 +15,12 @@ const Sidebar = ({
 }) => {
   const { isDarkMode } = useTheme();
   return (
-    <div className={`h-screen w-80 transform transition-all duration-300 ease-in-out ${
+    <div className={`h-screen w-80 flex flex-col transform transition-all duration-300 ease-in-out ${
       isDarkMode ? 'bg-gray-800' : 'bg-white'
     } border-r ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         
         {/* Sidebar Header */}
-        <div className={`p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} ${
+        <div className={`flex-shrink-0 p-4 border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'} ${
           showSidebar ? 'animate-fade-in-up' : ''
         }`}>
           <div className="flex items-center justify-between mb-4">
@@ -42,25 +42,27 @@ const Sidebar = ({
           <NewChatButton onCreateNew={onCreateNew} />
         </div>
         {/* Conversations List */}
-        <div className={`flex-1 overflow-y-auto p-4 sidebar-scroll ${
-          showSidebar ? 'animate-fade-in-up animation-delay-100' : ''
-        }`}>
-          <div className={`text-xs font-medium mb-3 transition-colors duration-200 ${
-            isDarkMode ? 'text-gray-400' : 'text-gray-600'
+        <div className="flex-1 overflow-hidden">
+          <div className={`h-full overflow-y-auto p-4 sidebar-scroll ${
+            showSidebar ? 'animate-fade-in-up animation-delay-100' : ''
           }`}>
-            Geçmiş Sohbetler
+            <div className={`text-xs font-medium mb-3 transition-colors duration-200 ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              Geçmiş Sohbetler
+            </div>
+            
+            <ConversationList 
+              conversations={conversations}
+              currentConversationId={currentConversationId}
+              onLoadConversation={onLoadConversation}
+              onDeleteConversation={onDeleteConversation}
+              user={user}
+            />
           </div>
-          
-          <ConversationList 
-            conversations={conversations}
-            currentConversationId={currentConversationId}
-            onLoadConversation={onLoadConversation}
-            onDeleteConversation={onDeleteConversation}
-            user={user}
-          />
         </div>
         {/* User Section */}
-        <div className={`p-4 border-t transition-colors duration-200 ${
+        <div className={`flex-shrink-0 p-4 border-t transition-colors duration-200 ${
           isDarkMode ? 'border-gray-700' : 'border-gray-200'
         } ${showSidebar ? 'animate-fade-in-up animation-delay-200' : ''}`}>
           <UserSection />

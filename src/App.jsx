@@ -7,7 +7,6 @@ import { useChat } from "./hooks/useChat";
 import { useConversations } from "./hooks/useConversations";
 import { DEFAULT_API_SETTINGS } from "./utils/constants";
 import Header from "./components/common/Header";
-import StatusBadge from "./components/common/StatusBadge";
 import SettingsPanel from "./components/common/SettingsPanel";
 import Sidebar from "./components/sidebar/Sidebar";
 import ChatContainer from "./components/chat/ChatContainer";
@@ -32,6 +31,7 @@ const AppContent = () => {
       checkScreenSize();
     }
   }, [isInitialized]);
+  
   const [showSettings, setShowSettings] = useState(false);
   const [apiSettings, setApiSettings] = useState(DEFAULT_API_SETTINGS);
   const {
@@ -92,7 +92,7 @@ const AppContent = () => {
       )}
       
       {/* Main Content */}
-      <div className="flex-1 min-h-screen flex flex-col transition-all duration-300 ease-in-out">
+      <div className="flex-1 h-screen max-h-screen flex flex-col transition-all duration-300 ease-in-out overflow-hidden">
         <Header 
           showSidebar={showSidebar}
           setShowSidebar={setShowSidebar}
@@ -115,10 +115,10 @@ const AppContent = () => {
           isLoading={isLoading}
           showInputGlow={showInputGlow}
           onSendMessage={sendMessage}
+          currentConversationId={currentConversationId}
         />
       </div>
       <AuthModal onLoadConversations={loadConversations} />
-      <StatusBadge connectionStatus={connectionStatus} ragStatus={ragStatus} />
     </div>
   );
 };

@@ -119,6 +119,24 @@ export const useChat = (user, apiSettings) => {
   useEffect(() => {
     testConnection();
     checkRAGStatus();
+    
+    // Login sonrası chat temizleme event'ini dinle
+    const handleClearChat = () => {
+      setMessages([
+        {
+          id: 1,
+          type: "bot",
+          content: "Merhaba! Ben AI asistanınızım. Size nasıl yardımcı olabilirim?",
+          timestamp: new Date(),
+        },
+      ]);
+    };
+    
+    window.addEventListener('clearChat', handleClearChat);
+    
+    return () => {
+      window.removeEventListener('clearChat', handleClearChat);
+    };
   }, []);
   return {
     messages,

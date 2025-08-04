@@ -20,10 +20,19 @@ export const AuthProvider = ({ children }) => {
       setUser(JSON.parse(savedUser));
     }
   }, []);
-  const login = (userData, token) => {
+  const login = (userData, token, clearChat = false) => {
     setUser(userData);
     localStorage.setItem('accessToken', token);
     localStorage.setItem('user', JSON.stringify(userData));
+    
+    // Eğer backend clear_chat flag'ini gönderdiyse chat geçmişini temizle
+    if (clearChat) {
+      localStorage.removeItem('chatHistory');
+      localStorage.removeItem('currentConversation');
+      // Custom event dispatch ederek chat component'inin dinlemesini sağla
+      window.dispatchEvent(new CustomEvent('clearChat'));
+    }
+    
     setShowAuthModal(false);
   };
   const logout = async () => {

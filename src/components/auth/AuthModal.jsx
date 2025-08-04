@@ -19,7 +19,12 @@ const AuthModal = ({ onLoadConversations }) => {
     try {
       if (authMode === 'signin') {
         const data = await authAPI.signIn(authForm.email, authForm.password);
-        login(data.user, data.access_token);
+        
+        // Backend'den clear_chat flag'ini kontrol et
+        const clearChat = data.clear_chat || false;
+        
+        login(data.user, data.access_token, clearChat);
+        
         if (onLoadConversations) {
           onLoadConversations();
         }
