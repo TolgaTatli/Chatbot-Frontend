@@ -1,4 +1,4 @@
-import { Menu, Bot, Sun, Moon, Trash2, Settings } from "lucide-react";
+import { Menu, Bot, Sun, Moon, Info } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import deceLogo from "../../assets/deceLogo.png";
 const Header = ({ 
@@ -84,27 +84,15 @@ const Header = ({
             </button>
             
             <button
-              onClick={clearChat}
-              className={`p-2 rounded-lg transition-all duration-200 ${
-                isDarkMode 
-                  ? 'text-gray-400 hover:text-red-400 hover:bg-gray-700' 
-                  : 'text-gray-500 hover:text-red-500 hover:bg-red-50'
-              }`}
-              title="Sohbeti temizle"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
-            
-            <button
               onClick={() => setShowSettings(!showSettings)}
               className={`p-2 rounded-lg transition-all duration-200 ${
                 isDarkMode 
-                  ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' 
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  ? 'text-gray-400 hover:text-blue-400 hover:bg-gray-700' 
+                  : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'
               }`}
-              title="API Ayarları"
+              title="Sistem Durumu"
             >
-              <Settings className="w-5 h-5" />
+              <Info className="w-5 h-5" />
             </button>
           </div>
         </div>
