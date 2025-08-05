@@ -16,6 +16,17 @@ const ChatInput = ({
       onSendMessage();
     }
   };
+
+  // Textarea yükseklik ayarı
+  const handleInput = (e) => {
+    setInputMessage(e.target.value);
+    
+    // Auto-resize textarea
+    if (inputRef.current) {
+      inputRef.current.style.height = '3rem'; // Reset to minimum
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 128)}px`; // Max 128px
+    }
+  };
   return (
     <div className={`sticky bottom-0 z-20 ${
       isDarkMode ? 'bg-gray-900' : 'bg-gray-50'
@@ -26,11 +37,17 @@ const ChatInput = ({
             <textarea
               ref={inputRef}
               value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyUp={handleKeyPress}
+              onChange={handleInput}
+              onKeyDown={handleKeyPress}
               placeholder="Mesajınızı yazınız..."
               rows={1}
-              className={`w-full max-h-32 min-h-[3rem] px-6 py-4 border-2 rounded-full resize-none focus:outline-none transition-all duration-500 text-base placeholder:text-base ${
+              style={{ 
+                minHeight: '3rem',
+                maxHeight: '8rem',
+                overflow: 'hidden',
+                lineHeight: '1.5'
+              }}
+              className={`w-full px-6 py-4 border-2 rounded-full resize-none focus:outline-none transition-all duration-500 text-base placeholder:text-base ${
                 showInputGlow 
                   ? isDarkMode
                     ? 'bg-gray-800 text-gray-100 placeholder-gray-400 border-2 border-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.5)] animate-pulse'

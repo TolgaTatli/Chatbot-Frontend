@@ -6,12 +6,14 @@ import UserSection from "./UserSection";
 const Sidebar = ({ 
   showSidebar, 
   setShowSidebar, 
-  conversations, 
-  currentConversationId,
+  threads, 
+  currentThreadId,
   onCreateNew,
-  onLoadConversation,
-  onDeleteConversation,
-  user
+  onLoadThread,
+  onDeleteThread,
+  user,
+  isLoadingNewThread = false,
+  loadingQuestion = ""
 }) => {
   const { isDarkMode } = useTheme();
   return (
@@ -53,11 +55,13 @@ const Sidebar = ({
             </div>
             
             <ConversationList 
-              conversations={conversations}
-              currentConversationId={currentConversationId}
-              onLoadConversation={onLoadConversation}
-              onDeleteConversation={onDeleteConversation}
+              threads={threads}
+              currentThreadId={currentThreadId}
+              onLoadThread={onLoadThread}
+              onDeleteThread={onDeleteThread}
               user={user}
+              isLoadingNewThread={isLoadingNewThread}
+              loadingQuestion={loadingQuestion}
             />
           </div>
         </div>

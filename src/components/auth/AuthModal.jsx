@@ -1,9 +1,12 @@
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
+import { useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import { authAPI } from "../../services/auth";
+import { toast } from "react-toastify";
 const AuthModal = ({ onLoadConversations }) => {
   const { isDarkMode } = useTheme();
+  const [isLoading, setIsLoading] = useState(false);
   const { 
     showAuthModal, 
     authMode, 
@@ -15,6 +18,7 @@ const AuthModal = ({ onLoadConversations }) => {
   } = useAuth();
   const handleAuth = async (e) => {
     e.preventDefault();
+    setIsLoading(true); // Loading başlat
     
     try {
       if (authMode === 'signin') {
@@ -28,14 +32,32 @@ const AuthModal = ({ onLoadConversations }) => {
         if (onLoadConversations) {
           onLoadConversations();
         }
+        
+        // Başarılı giriş toast'ı
+        toast.success(`Hoş geldiniz, ${data.user.email}! 🎉`, {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        
       } else {
         await authAPI.signUp(authForm.email, authForm.password, authForm.fullName);
         setAuthMode('signin');
         setAuthForm({ email: authForm.email, password: '', fullName: '' });
-        alert('Kayıt başarılı! Şimdi giriş yapabilirsiniz.');
+        
+        // Başarılı kayıt toast'ı
+        toast.success('Kayıt başarılı! Şimdi giriş yapabilirsiniz. ✅', {
+          position: "top-right",
+          autoClose: 4000,
+        });
       }
     } catch (error) {
-      alert(error.message);
+      // Hata toast'ı
+      toast.error(error.message || 'Bir hata oluştu!', {
+        position: "top-right",
+        autoClose: 4000,
+      });
+    } finally {
+      setIsLoading(false); // Loading bitir
     }
   };
   const switchMode = () => {
@@ -72,12 +94,17 @@ const AuthModal = ({ onLoadConversations }) => {
                 </label>
                 <input
                   type="text"
+                  disabled={isLoading}
                   value={authForm.fullName}
                   onChange={(e) => setAuthForm({ ...authForm, fullName: e.target.value })}
                   className={`w-full px-4 py-3 rounded-lg border transition-colors ${
-                    isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500' 
-                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-500'
+                    isLoading 
+                      ? isDarkMode
+                        ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed'
+                        : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                      : isDarkMode 
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500' 
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-500'
                   } focus:outline-none`}
                   placeholder="Adınızı girin"
                 />
@@ -92,12 +119,17 @@ const AuthModal = ({ onLoadConversations }) => {
               <input
                 type="email"
                 required
+                disabled={isLoading}
                 value={authForm.email}
                 onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })}
                 className={`w-full px-4 py-3 rounded-lg border transition-colors ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500' 
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-500'
+                  isLoading 
+                    ? isDarkMode
+                      ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed'
+                      : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                    : isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500' 
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-500'
                 } focus:outline-none`}
                 placeholder="ornek@email.com"
               />
@@ -111,12 +143,17 @@ const AuthModal = ({ onLoadConversations }) => {
               <input
                 type="password"
                 required
+                disabled={isLoading}
                 value={authForm.password}
                 onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
                 className={`w-full px-4 py-3 rounded-lg border transition-colors ${
-                  isDarkMode 
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500' 
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-500'
+                  isLoading 
+                    ? isDarkMode
+                      ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed'
+                      : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                    : isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500' 
+                      : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-500'
                 } focus:outline-none`}
                 placeholder="••••••••"
                 minLength="6"
@@ -124,20 +161,36 @@ const AuthModal = ({ onLoadConversations }) => {
             </div>
             <button
               type="submit"
-              className={`w-full py-3 rounded-lg font-medium transition-colors ${
-                isDarkMode 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                  : 'bg-purple-600 hover:bg-purple-700 text-white'
+              disabled={isLoading}
+              className={`w-full py-3 rounded-lg font-medium transition-all duration-300 flex items-center justify-center space-x-2 ${
+                isLoading
+                  ? isDarkMode 
+                    ? 'bg-gray-600 cursor-not-allowed text-gray-300' 
+                    : 'bg-gray-400 cursor-not-allowed text-gray-200'
+                  : isDarkMode 
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white transform hover:scale-[1.02] active:scale-[0.98]' 
+                    : 'bg-purple-600 hover:bg-purple-700 text-white transform hover:scale-[1.02] active:scale-[0.98]'
               }`}
             >
-              {authMode === 'signin' ? 'Giriş Yap' : 'Kayıt Ol'}
+              {isLoading && (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              )}
+              <span>
+                {isLoading 
+                  ? (authMode === 'signin' ? 'Giriş yapılıyor...' : 'Kayıt yapılıyor...')
+                  : (authMode === 'signin' ? 'Giriş Yap' : 'Kayıt Ol')
+                }
+              </span>
             </button>
           </form>
           <div className="mt-6 text-center">
             <button
               onClick={switchMode}
-              className={`text-sm ${
-                isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-purple-600 hover:text-purple-700'
+              disabled={isLoading}
+              className={`text-sm transition-colors ${
+                isLoading
+                  ? isDarkMode ? 'text-gray-600 cursor-not-allowed' : 'text-gray-400 cursor-not-allowed'
+                  : isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-purple-600 hover:text-purple-700'
               }`}
             >
               {authMode === 'signin' 

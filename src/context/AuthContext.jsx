@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 const AuthContext = createContext();
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -17,9 +18,40 @@ export const AuthProvider = ({ children }) => {
     const savedUser = localStorage.getItem('user');
     
     if (token && savedUser) {
-      setUser(JSON.parse(savedUser));
+      // Token'ı doğrula
+      validateToken(token);
     }
+
+    // Auth error listener ekle
+    const handleAuthError = () => {
+      logout();
+    };
+
+    window.addEventListener('authError', handleAuthError);
+    return () => window.removeEventListener('authError', handleAuthError);
   }, []);
+
+  const validateToken = async (token) => {
+    try {
+      const response = await fetch('http://localhost:8000/auth/user', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData.user);
+      } else {
+        // Token geçersiz - temizle
+        console.log('🔄 Token geçersiz, temizleniyor...');
+        logout();
+      }
+    } catch (error) {
+      console.error('Token doğrulama hatası:', error);
+      logout();
+    }
+  };
   const login = (userData, token, clearChat = false) => {
     setUser(userData);
     localStorage.setItem('accessToken', token);
@@ -49,6 +81,12 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
+      
+      // Çıkış başarılı toast'ı
+      toast.info('Başarıyla çıkış yaptınız! 👋', {
+        position: "top-right",
+        autoClose: 3000,
+      });
     }
   };
   const openAuthModal = (mode = 'signin') => {
@@ -70,7 +108,8 @@ export const AuthProvider = ({ children }) => {
       login,
       logout,
       openAuthModal,
-      closeAuthModal
+      closeAuthModal,
+      validateToken
     }}>
       {children}
     </AuthContext.Provider>

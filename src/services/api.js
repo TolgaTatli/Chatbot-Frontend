@@ -1,4 +1,23 @@
 const API_BASE = 'http://localhost:8000';
+
+// Auth error handling
+const handleAuthError = () => {
+  console.log('🔄 Token süresi dolmuş, çıkış yapılıyor...');
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('user');
+  
+  // Token süresi doldu toast'ı - Dinamik import kullan
+  import('react-toastify').then(({ toast }) => {
+    toast.warning('Oturum süreniz doldu. Tekrar giriş yapınız! ⏰', {
+      position: "top-right",
+      autoClose: 4000,
+    });
+  });
+  
+  window.dispatchEvent(new CustomEvent('authError'));
+  setTimeout(() => window.location.reload(), 1000); // Toast'ın görünmesi için kısa bekleme
+};
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem('accessToken');
   const headers = {
@@ -12,18 +31,20 @@ const getAuthHeaders = () => {
   return headers;
 };
 export const chatAPI = {
-  streamingRequest: async (message, topK, userId, onChunk, onConversationSaved) => {
+  streamingRequest: async (message, topK, userId, threadId, onChunk, onConversationSaved) => {
     return new Promise((resolve, reject) => {
       const requestBody = JSON.stringify({
         question: message,
         top_k: topK,
-        user_id: userId || null
+        user_id: userId || null,
+        ...(threadId && { thread_id: threadId }) // Thread ID varsa ekle
       });
       
       let streamingData = {
         answer: '',
         conversationSaved: false,
         conversationId: null,
+        threadId: null,
         sources: [],
         confidence: 0,
         method: 'unknown'
@@ -36,6 +57,10 @@ export const chatAPI = {
       })
       .then(response => {
         if (!response.ok) {
+          if (response.status === 401) {
+            handleAuthError();
+            return;
+          }
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         
@@ -77,20 +102,22 @@ export const chatAPI = {
                     streamingData.method = data.method || 'unknown';
                     streamingData.conversationSaved = data.conversation_saved || false;
                     streamingData.conversationId = data.conversation_id || null;
+                    streamingData.threadId = data.thread_id || null;
                     
                     // Debug: End event'ini logla
                     console.log('🔍 Stream End Event Data:', {
                       type: data.type,
                       conversation_saved: data.conversation_saved,
                       conversation_id: data.conversation_id,
+                      thread_id: data.thread_id,
                       user_authenticated: data.user_authenticated,
                       fullData: data
                     });
                     
-                    // Conversation kaydedildiyse callback'i çağır
+                    // Thread kaydedildiyse callback'i çağır
                     if (streamingData.conversationSaved && onConversationSaved) {
-                      console.log('✅ Calling onConversationSaved with ID:', streamingData.conversationId);
-                      onConversationSaved(streamingData.conversationId);
+                      console.log('✅ Calling onConversationSaved with Thread ID:', streamingData.threadId);
+                      onConversationSaved(streamingData.threadId, streamingData.conversationId);
                     } else {
                       console.warn('❌ Conversation not saved or no callback. Saved:', streamingData.conversationSaved, 'Callback:', !!onConversationSaved);
                     }
@@ -114,18 +141,23 @@ export const chatAPI = {
       .catch(reject);
     });
   },
-  normalRequest: async (message, topK, userId) => {
+  normalRequest: async (message, topK, userId, threadId) => {
     const response = await fetch(`${API_BASE}/generate`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify({
         question: message,
         top_k: topK,
-        user_id: userId || null
+        user_id: userId || null,
+        ...(threadId && { thread_id: threadId })
       }),
     });
     
     if (!response.ok) {
+      if (response.status === 401) {
+        handleAuthError();
+        return {};
+      }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
@@ -145,6 +177,7 @@ export const chatAPI = {
       answer: responseText,
       conversationSaved: data.conversation_saved || false,
       conversationId: data.conversation_id || null,
+      threadId: data.thread_id || null,
       sources: data.sources || [],
       confidence: data.confidence || 0,
       method: data.method || 'unknown'
@@ -179,6 +212,7 @@ export const chatAPI = {
   }
 };
 export const conversationsAPI = {
+  // Eski endpoint'ler (geriye uyumluluk için)
   getAll: async () => {
     const response = await fetch(`${API_BASE}/history`, {
       headers: getAuthHeaders()
@@ -217,6 +251,54 @@ export const conversationsAPI = {
       method: 'DELETE',
       headers: getAuthHeaders()
     });
+    return response.ok;
+  }
+};
+
+// Yeni Threading API
+export const threadsAPI = {
+  // Thread listesi al
+  getAll: async () => {
+    const response = await fetch(`${API_BASE}/threads`, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) {
+      if (response.status === 401) {
+        handleAuthError();
+        return [];
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.threads || [];
+  },
+  
+  // Belirli thread'in tüm mesajları
+  getMessages: async (threadId) => {
+    const response = await fetch(`${API_BASE}/threads/${threadId}/messages`, {
+      headers: getAuthHeaders()
+    });
+    if (!response.ok) {
+      if (response.status === 401) {
+        handleAuthError();
+        return [];
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.messages || [];
+  },
+  
+  // Thread sil
+  delete: async (threadId) => {
+    const response = await fetch(`${API_BASE}/threads/${threadId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    if (!response.ok && response.status === 401) {
+      handleAuthError();
+      return false;
+    }
     return response.ok;
   }
 };

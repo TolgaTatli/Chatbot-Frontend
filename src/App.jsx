@@ -4,13 +4,15 @@ import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/AuthContext";
 import { useTheme } from "./context/ThemeContext";
 import { useChat } from "./hooks/useChat";
-import { useConversations } from "./hooks/useConversations";
+import { useThreads } from "./hooks/useThreads";
 import { DEFAULT_API_SETTINGS } from "./utils/constants";
 import Header from "./components/common/Header";
 import SettingsPanel from "./components/common/SettingsPanel";
 import Sidebar from "./components/sidebar/Sidebar";
 import ChatContainer from "./components/chat/ChatContainer";
 import AuthModal from "./components/auth/AuthModal";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import "./App.css";
 
 const AppContent = () => {
@@ -44,25 +46,34 @@ const AppContent = () => {
     connectionStatus,
     ragStatus,
     currentConversationId: chatConversationId,
+    currentThreadId,
+    setCurrentThreadId,
+    isCreatingNewThread,
+    currentQuestion,
     sendMessage,
     clearChat
   } = useChat(user, apiSettings);
+  
   const {
-    conversations,
-    currentConversationId,
-    loadConversations,
-    loadConversationById,
-    deleteConversation,
+    threads,
+    currentThreadId: threadsCurrentThreadId,
+    loadThreads,
+    loadThreadMessages,
+    deleteThread,
     createNewConversation
-  } = useConversations(user);
+  } = useThreads(user);
   const handleCreateNewConversation = () => {
-    createNewConversation(setMessages);
+    createNewConversation(setMessages, setCurrentThreadId);
   };
-  const handleLoadConversation = (conversationId) => {
-    loadConversationById(conversationId, setMessages);
+  
+  const handleLoadThread = (threadId) => {
+    console.log('🔄 Thread yükleniyor - App.jsx:', threadId, typeof threadId);
+    console.log('🔄 Mevcut currentThreadId:', currentThreadId);
+    loadThreadMessages(threadId, setMessages, setCurrentThreadId);
   };
-  const handleDeleteConversation = (conversationId) => {
-    deleteConversation(conversationId, handleCreateNewConversation);
+  
+  const handleDeleteThread = (threadId) => {
+    deleteThread(threadId, handleCreateNewConversation);
   };
   return (
     <div className={`min-h-screen flex transition-all duration-300 ease-in-out ${
@@ -82,12 +93,14 @@ const AppContent = () => {
           <Sidebar 
             showSidebar={showSidebar}
             setShowSidebar={setShowSidebar}
-            conversations={conversations}
-            currentConversationId={currentConversationId}
+            threads={threads}
+            currentThreadId={currentThreadId || threadsCurrentThreadId}
             onCreateNew={handleCreateNewConversation}
-            onLoadConversation={handleLoadConversation}
-            onDeleteConversation={handleDeleteConversation}
+            onLoadThread={handleLoadThread}
+            onDeleteThread={handleDeleteThread}
             user={user}
+            isLoadingNewThread={isCreatingNewThread}
+            loadingQuestion={currentQuestion}
           />
         </div>
       )}
@@ -116,10 +129,27 @@ const AppContent = () => {
           isLoading={isLoading}
           showInputGlow={showInputGlow}
           onSendMessage={sendMessage}
-          currentConversationId={currentConversationId}
+          currentConversationId={currentThreadId || threadsCurrentThreadId}
         />
       </div>
-      <AuthModal onLoadConversations={loadConversations} />
+      <AuthModal onLoadConversations={loadThreads} />
+      
+      {/* Toast Container */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme={isDarkMode ? "dark" : "light"}
+        toastClassName="!bg-white dark:!bg-gray-800 !text-gray-900 dark:!text-white"
+        bodyClassName="!text-gray-900 dark:!text-white"
+        progressClassName="!bg-blue-500"
+      />
     </div>
   );
 };
