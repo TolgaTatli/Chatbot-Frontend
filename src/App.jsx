@@ -11,29 +11,29 @@ import SettingsPanel from "./components/common/SettingsPanel";
 import Sidebar from "./components/sidebar/Sidebar";
 import ChatContainer from "./components/chat/ChatContainer";
 import AuthModal from "./components/auth/AuthModal";
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
 
 const AppContent = () => {
   const { isDarkMode } = useTheme();
   const { user } = useAuth();
-  
+
   // Sidebar başlangıçta masaüstünde açık, mobilde kapalı
   const [showSidebar, setShowSidebar] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  
+
   useEffect(() => {
     if (!isInitialized) {
       const checkScreenSize = () => {
         setShowSidebar(window.innerWidth >= 1024); // lg breakpoint
         setIsInitialized(true);
       };
-      
+
       checkScreenSize();
     }
   }, [isInitialized]);
-  
+
   const [showSettings, setShowSettings] = useState(false);
   const [apiSettings, setApiSettings] = useState(DEFAULT_API_SETTINGS);
   const {
@@ -51,46 +51,47 @@ const AppContent = () => {
     isCreatingNewThread,
     currentQuestion,
     sendMessage,
-    clearChat
+    clearChat,
   } = useChat(user, apiSettings);
-  
+
   const {
     threads,
     currentThreadId: threadsCurrentThreadId,
     loadThreads,
     loadThreadMessages,
     deleteThread,
-    createNewConversation
+    createNewConversation,
   } = useThreads(user);
   const handleCreateNewConversation = () => {
     createNewConversation(setMessages, setCurrentThreadId);
   };
-  
+
   const handleLoadThread = (threadId) => {
-    console.log('🔄 Thread yükleniyor - App.jsx:', threadId, typeof threadId);
-    console.log('🔄 Mevcut currentThreadId:', currentThreadId);
+    console.log("🔄 Thread yükleniyor - App.jsx:", threadId, typeof threadId);
+    console.log("🔄 Mevcut currentThreadId:", currentThreadId);
     loadThreadMessages(threadId, setMessages, setCurrentThreadId);
   };
-  
+
   const handleDeleteThread = (threadId) => {
     deleteThread(threadId, handleCreateNewConversation);
   };
   return (
-    <div className={`min-h-screen flex transition-all duration-300 ease-in-out ${
-      isDarkMode ? 'bg-gray-900' : 'bg-gray-50'
-    }`}>
-      {/* Mobile Overlay */}
+    <div
+      className={`min-h-screen flex transition-all duration-300 ease-in-out ${
+        isDarkMode ? "bg-gray-900" : "bg-gray-50"
+      }`}
+    >
       {showSidebar && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={() => setShowSidebar(false)}
         />
       )}
-      
+
       {/* Sidebar - ChatGPT tarzı */}
       {showSidebar && (
         <div className="w-80 flex-shrink-0 fixed lg:relative inset-y-0 left-0 z-50 lg:z-auto">
-          <Sidebar 
+          <Sidebar
             showSidebar={showSidebar}
             setShowSidebar={setShowSidebar}
             threads={threads}
@@ -104,10 +105,10 @@ const AppContent = () => {
           />
         </div>
       )}
-      
+
       {/* Main Content */}
       <div className="flex-1 h-screen max-h-screen flex flex-col transition-all duration-300 ease-in-out overflow-hidden">
-        <Header 
+        <Header
           showSidebar={showSidebar}
           setShowSidebar={setShowSidebar}
           connectionStatus={connectionStatus}
@@ -115,14 +116,14 @@ const AppContent = () => {
           setShowSettings={setShowSettings}
           clearChat={clearChat}
         />
-        
-        <SettingsPanel 
+
+        <SettingsPanel
           showSettings={showSettings}
           apiSettings={apiSettings}
           setApiSettings={setApiSettings}
           ragStatus={ragStatus}
         />
-        <ChatContainer 
+        <ChatContainer
           messages={messages}
           inputMessage={inputMessage}
           setInputMessage={setInputMessage}
@@ -133,7 +134,7 @@ const AppContent = () => {
         />
       </div>
       <AuthModal onLoadConversations={loadThreads} />
-      
+
       {/* Toast Container */}
       <ToastContainer
         position="top-right"

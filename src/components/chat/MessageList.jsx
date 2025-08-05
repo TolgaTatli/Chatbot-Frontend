@@ -3,16 +3,27 @@ import Message from "./Message";
 
 const MessageList = ({ messages, isTransitioning = false }) => {
   const messagesEndRef = useRef(null);
+  const containerRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Ana scroll fonksiyonu - her zaman çalışır
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      scrollToBottom();
+    }, 100); // Kısa bir gecikme ile scroll yap
+    
+    return () => clearTimeout(timeoutId);
+  }, [messages]);
+
+  // Transition durumunda da scroll yap
   useEffect(() => {
     if (!isTransitioning) {
       scrollToBottom();
     }
-  }, [messages, isTransitioning]);
+  }, [isTransitioning]);
 
   return (
     <div className="flex-1 overflow-y-auto min-h-0">
