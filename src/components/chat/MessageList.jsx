@@ -9,16 +9,14 @@ const MessageList = ({ messages, isTransitioning = false }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Ana scroll fonksiyonu - her zaman çalışır
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       scrollToBottom();
-    }, 100); // Kısa bir gecikme ile scroll yap
+    }, 100); 
     
     return () => clearTimeout(timeoutId);
   }, [messages]);
 
-  // Transition durumunda da scroll yap
   useEffect(() => {
     if (!isTransitioning) {
       scrollToBottom();

@@ -13,21 +13,18 @@ const ChatContainer = ({
 }) => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [previousConversationId, setPreviousConversationId] = useState(currentConversationId);
-  const [animationPhase, setAnimationPhase] = useState('idle'); // 'idle', 'blur-out', 'blur-in'
+  const [animationPhase, setAnimationPhase] = useState('idle');
 
   useEffect(() => {
     if (currentConversationId !== previousConversationId) {
-      // Başla: Blur out animasyonu
       setAnimationPhase('blur-out');
       setIsTransitioning(true);
       
-      // Orta: İçeriği değiştir ve blur in başlat
       const changeContentTimer = setTimeout(() => {
         setAnimationPhase('blur-in');
         setPreviousConversationId(currentConversationId);
       }, 400);
       
-      // Son: Animasyonu bitir
       const endTransitionTimer = setTimeout(() => {
         setIsTransitioning(false);
         setAnimationPhase('idle');
@@ -42,7 +39,6 @@ const ChatContainer = ({
 
   return (
     <div className="flex-1 flex flex-col min-h-0 relative">
-      {/* Main Content with Blur Animation */}
       <div className={`flex-1 flex flex-col min-h-0 transition-all duration-400 ${
         animationPhase === 'blur-out' ? 'animate-blur-out' :
         animationPhase === 'blur-in' ? 'animate-blur-in' :

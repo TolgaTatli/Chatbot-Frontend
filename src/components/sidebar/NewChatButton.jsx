@@ -8,8 +8,7 @@ const NewChatButton = ({ onCreateNew }) => {
   const handleNewChat = () => {
     onCreateNew();
     
-    // Yeni sohbet toast'ı
-    toast.info('Yeni sohbet oluşturuldu! ✨', {
+    toast.info('Yeni sohbet oluşturuldu!', {
       position: "top-right",
       autoClose: 2000,
     });

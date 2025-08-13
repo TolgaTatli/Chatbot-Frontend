@@ -7,19 +7,15 @@ export const useThreads = (user) => {
   const [threads, setThreads] = useState([]);
   const [currentThreadId, setCurrentThreadId] = useState(null);
   
-  // Thread saved event'ini dinle
   useEffect(() => {
     const handleThreadSaved = (event) => {
       const { threadId, question, answer } = event.detail;
-      console.log('🎯 ThreadSaved event yakalandı:', { threadId, question: question?.substring(0, 50), answer: answer?.substring(0, 50) });
+      console.log('ThreadSaved event yakalandı:', { threadId, question: question?.substring(0, 50), answer: answer?.substring(0, 50) });
       
-      // setThreads callback ile mevcut state'e erişim
       setThreads(prevThreads => {
-        // Mevcut thread'de mi yoksa yeni thread mi kontrol et
         const existingThread = prevThreads.find(t => t.thread_id === threadId || t.id?.toString() === threadId);
         
         if (!existingThread) {
-          // Yeni thread - listeye ekle
           const newThread = {
             id: threadId,
             thread_id: threadId,
@@ -34,11 +30,10 @@ export const useThreads = (user) => {
             updated_at: new Date().toISOString()
           };
           
-          console.log('➕ Yeni thread listeye ekleniyor:', newThread);
+          console.log('Yeni thread listeye ekleniyor:', newThread);
           return [newThread, ...prevThreads];
         } else {
-          // Mevcut thread - güncelle (son mesaj vs.)
-          console.log('🔄 Mevcut thread güncelleniyor:', threadId);
+          console.log('Mevcut thread güncelleniyor:', threadId);
           return prevThreads.map(thread => 
             (thread.thread_id === threadId || thread.id?.toString() === threadId)
               ? { 
@@ -53,38 +48,35 @@ export const useThreads = (user) => {
       });
     };
 
-    console.log('🔧 ThreadSaved event listener kuruluyor...');
+    console.log('ThreadSaved event listener kuruluyor...');
     window.addEventListener('threadSaved', handleThreadSaved);
     
     return () => {
-      console.log('🧹 ThreadSaved event listener temizleniyor...');
+      console.log('ThreadSaved event listener temizleniyor...');
       window.removeEventListener('threadSaved', handleThreadSaved);
     };
-  }, []); // Dependency array boş - sadece bir kez kurulacak
+  }, []); 
   
   const loadThreads = async () => {
     if (!user) {
-      console.log('🚫 User yoktu, threads yüklenmiyor');
+      console.log('User yoktu, threads yüklenmiyor');
       return;
     }
     
-    console.log('📡 Threads API çağrılıyor...');
+    console.log('Threads API çağrılıyor...');
     try {
-      // Önce yeni threads API'yi dene, yoksa eski conversations API'yi kullan
       let data;
       try {
         data = await threadsAPI.getAll();
-        console.log('📝 Threads API\'den gelen data:', data.length, 'adet');
+        console.log('Threads API\'den gelen data:', data.length, 'adet');
       } catch (threadsError) {
-        console.warn('⚠️ Threads API başarısız, conversations API deneniyor...', threadsError);
-        // Eski conversation API'yi kullan
+        console.warn('Threads API başarısız, conversations API deneniyor...', threadsError);
         const conversations = await conversationsAPI.getAll();
-        // Conversation'ları thread formatına çevir
         data = conversations.map(conv => ({
           id: conv.id,
-          thread_id: conv.id.toString(), // String olarak kullan
-          thread_title: conv.question, // Backend formatına uygun
-          title: conv.question, // Fallback
+          thread_id: conv.id.toString(), 
+          thread_title: conv.question,
+          title: conv.question, 
           first_message: conv.question,
           last_message: conv.answer,
           message_count: 2,
@@ -93,13 +85,13 @@ export const useThreads = (user) => {
           last_updated_at: conv.updated_at || conv.created_at,
           updated_at: conv.updated_at || conv.created_at
         }));
-        console.log('📝 Conversations API\'den çevrilen threads:', data.length, 'adet');
+        console.log('Conversations API\'den çevrilen threads:', data.length, 'adet');
       }
       
-      console.log('📋 Threads listesi:', data);
+      console.log('Threads listesi:', data);
       setThreads(data);
     } catch (error) {
-      console.error('❌ Load threads error:', error);
+      console.error('Load threads error:', error);
     }
   };
   
@@ -109,13 +101,10 @@ export const useThreads = (user) => {
     try {
       console.log('📂 Thread mesajları yükleniyor:', threadId, typeof threadId);
       
-      // Thread ID'yi string'e çevir
       const threadIdStr = threadId.toString();
       
-      // Mevcut thread'i threads listesinde bul
       const currentThread = threads.find(t => t.thread_id === threadIdStr || t.id?.toString() === threadIdStr);
       
-      // Önce yeni threads API'yi dene
       let messages;
       try {
         messages = await threadsAPI.getMessages(threadIdStr);
@@ -125,10 +114,9 @@ export const useThreads = (user) => {
           setMessages(convertedMessages);
           setCurrentThreadId(threadIdStr);
           if (setCurrentThreadId) {
-            setCurrentThreadId(threadIdStr); // useChat'teki thread ID'yi de güncelle
+            setCurrentThreadId(threadIdStr); 
           }
           
-          // Thread başlığını güncelle (eğer bulunursa)
           if (currentThread && messages[0]) {
             const firstUserMessage = messages.find(m => m.message_type === 'user');
             if (firstUserMessage && firstUserMessage.question) {
@@ -149,7 +137,6 @@ export const useThreads = (user) => {
         console.warn('⚠️ Threads messages API başarısız, conversation API deneniyor...', threadsError);
       }
       
-      // Eski conversation API'yi dene (fallback)
       try {
         const conversation = await conversationsAPI.getById(threadId);
         if (conversation) {
@@ -174,7 +161,6 @@ export const useThreads = (user) => {
   const deleteThread = async (threadId, createNewConversation) => {
     if (!user || !threadId) return false;
     
-    // Toast ile onay alma
     const confirmed = window.confirm('Bu sohbeti silmek istediğinizden emin misiniz?');
     if (!confirmed) {
       return false;
@@ -190,7 +176,6 @@ export const useThreads = (user) => {
           createNewConversation();
         }
         
-        // Başarılı silme toast'ı
         toast.success('Sohbet başarıyla silindi! 🗑️', {
           position: "top-right",
           autoClose: 3000,
@@ -217,13 +202,13 @@ export const useThreads = (user) => {
   const createNewConversation = (setMessages, setCurrentThreadId) => {
     setCurrentThreadId(null);
     if (setCurrentThreadId) {
-      setCurrentThreadId(null); // useChat'teki thread ID'yi de temizle
+      setCurrentThreadId(null); 
     }
     setMessages([
       {
         id: 1,
         type: "bot",
-        content: "Merhaba! Ben AI asistanınızım. Size nasıl yardımcı olabilirim?",
+        content: "Hello, I'm your AI assistant. How can I assist you?",
         timestamp: new Date(),
       },
     ]);
@@ -244,16 +229,13 @@ export const useThreads = (user) => {
       setCurrentThreadId(null);
     };
     
-    // Yeni thread kaydedildiğinde listeyi yenile
     const handleThreadSaved = (event) => {
       const { threadId, question, answer } = event.detail || {};
       console.log('🔔 Yeni thread event alındı:', threadId);
       
       if (threadId && question && answer) {
-        // Önce anında listeye ekle
         addNewThread(threadId, question, answer);
         
-        // Sonra backend'den güncel listeyi al (background'da)
         setTimeout(() => {
           console.log('🔄 Background thread refresh başlatılıyor...');
           loadThreads().then(() => {
@@ -261,7 +243,7 @@ export const useThreads = (user) => {
           }).catch(error => {
             console.error('❌ Background thread refresh başarısız:', error);
           });
-        }, 1000); // 1 saniye sonra
+        }, 1000);
       } else {
         console.warn('⚠️ Thread event data eksik:', { threadId, question, answer });
       }
@@ -286,21 +268,18 @@ export const useThreads = (user) => {
   };
 };
 
-// Thread mesajlarını chat formatına çevir (ChatGPT tarzı)
 const convertThreadMessagesToChat = (threadMessages) => {
   console.log('🔄 Thread mesajları çevriliyor:', threadMessages);
   
-  // Boş başlangıç mesajı
   const chatMessages = [
     {
       id: 1,
       type: "bot",
-      content: "Merhaba! Ben AI asistanınızım. Size nasıl yardımcı olabilirim?",
+      content: "Hello, I'm your AI assistant. How can I assist you?",
       timestamp: new Date(),
     }
   ];
   
-  // Thread mesajlarını sıraya koy ve question+answer çiftleri oluştur
   const sortedMessages = threadMessages.sort((a, b) => (a.message_order || 0) - (b.message_order || 0));
   
   let currentQuestion = null;
@@ -315,9 +294,7 @@ const convertThreadMessagesToChat = (threadMessages) => {
       answer: msg.answer?.slice(0, 30)
     });
     
-    // ChatGPT tarzında - ayrı user ve assistant mesajları
     if (msg.message_type === 'user' && (msg.question || msg.content)) {
-      // User mesajı
       chatMessages.push({
         id: messageId++,
         type: "user",
@@ -326,7 +303,6 @@ const convertThreadMessagesToChat = (threadMessages) => {
       });
       currentQuestion = msg.question || msg.content;
     } else if (msg.message_type === 'assistant' && (msg.answer || msg.content)) {
-      // Assistant mesajı
       chatMessages.push({
         id: messageId++,
         type: "bot",
@@ -334,7 +310,6 @@ const convertThreadMessagesToChat = (threadMessages) => {
         timestamp: new Date(msg.created_at),
       });
     } else if (msg.question && msg.answer) {
-      // Eski format - hem question hem answer var
       chatMessages.push({
         id: messageId++,
         type: "user",
@@ -354,33 +329,3 @@ const convertThreadMessagesToChat = (threadMessages) => {
   console.log('✅ Çevrilmiş chat mesajları:', chatMessages.length, 'adet');
   return chatMessages;
 };
-
-// Eski conversation formatını mesajlara çevir (geçici uyumluluk için)
-// const convertConversationToMessages = (conversation) => {
-//   const messages = [
-//     {
-//       id: 1,
-//       type: "bot",
-//       content: "Merhaba! Ben AI asistanınızım. Size nasıl yardımcı olabilirim?",
-//       timestamp: new Date(),
-//     }
-//   ];
-//   
-//   if (conversation.question && conversation.answer) {
-//     messages.push({
-//       id: 2,
-//       type: "user",
-//       content: conversation.question,
-//       timestamp: new Date(conversation.created_at),
-//     });
-//     
-//     messages.push({
-//       id: 3,
-//       type: "bot",
-//       content: conversation.answer,
-//       timestamp: new Date(conversation.created_at),
-//     });
-//   }
-//   
-//   return messages;
-// };

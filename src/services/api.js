@@ -1,12 +1,10 @@
 const API_BASE = 'http://localhost:8000';
 
-// Auth error handling
 const handleAuthError = () => {
   console.log('🔄 Token süresi dolmuş, çıkış yapılıyor...');
   localStorage.removeItem('accessToken');
   localStorage.removeItem('user');
   
-  // Token süresi doldu toast'ı - Dinamik import kullan
   import('react-toastify').then(({ toast }) => {
     toast.warning('Oturum süreniz doldu. Tekrar giriş yapınız! ⏰', {
       position: "top-right",
@@ -15,7 +13,7 @@ const handleAuthError = () => {
   });
   
   window.dispatchEvent(new CustomEvent('authError'));
-  setTimeout(() => window.location.reload(), 1000); // Toast'ın görünmesi için kısa bekleme
+  setTimeout(() => window.location.reload(), 1000); 
 };
 
 const getAuthHeaders = () => {
@@ -37,7 +35,7 @@ export const chatAPI = {
         question: message,
         top_k: topK,
         user_id: userId || null,
-        ...(threadId && { thread_id: threadId }) // Thread ID varsa ekle
+        ...(threadId && { thread_id: threadId })
       });
       
       let streamingData = {
@@ -96,7 +94,6 @@ export const chatAPI = {
                     }
                   }
                   else if (data.type === 'end') {
-                    // End event'inde conversation bilgilerini al
                     streamingData.sources = data.sources || [];
                     streamingData.confidence = data.confidence || 0;
                     streamingData.method = data.method || 'unknown';
@@ -104,7 +101,6 @@ export const chatAPI = {
                     streamingData.conversationId = data.conversation_id || null;
                     streamingData.threadId = data.thread_id || null;
                     
-                    // Debug: End event'ini logla
                     console.log('🔍 Stream End Event Data:', {
                       type: data.type,
                       conversation_saved: data.conversation_saved,
@@ -114,12 +110,11 @@ export const chatAPI = {
                       fullData: data
                     });
                     
-                    // Thread kaydedildiyse callback'i çağır
                     if (streamingData.conversationSaved && onConversationSaved) {
-                      console.log('✅ Calling onConversationSaved with Thread ID:', streamingData.threadId);
+                      console.log('Calling onConversationSaved with Thread ID:', streamingData.threadId);
                       onConversationSaved(streamingData.threadId, streamingData.conversationId);
                     } else {
-                      console.warn('❌ Conversation not saved or no callback. Saved:', streamingData.conversationSaved, 'Callback:', !!onConversationSaved);
+                      console.warn('Conversation not saved or no callback. Saved:', streamingData.conversationSaved, 'Callback:', !!onConversationSaved);
                     }
                     
                     console.log('Streaming tamamlandı, conversation:', streamingData.conversationSaved ? 'kaydedildi' : 'kaydedilmedi');
@@ -165,14 +160,13 @@ export const chatAPI = {
     let responseText = data.answer || "Yanıt alınamadı";
     
     if (responseText.includes("Ollama hatası: 500")) {
-      responseText = "🔧 Model yükleme hatası. RAG sistemi çalışıyor ancak AI modeli yüklenemiyor. Lütfen sistem yöneticisine başvurun veya birkaç dakika bekleyip tekrar deneyin.";
+      responseText = "Model yükleme hatası. RAG sistemi çalışıyor ancak AI modeli yüklenemiyor. Lütfen sistem yöneticisine başvurun veya birkaç dakika bekleyip tekrar deneyin.";
     }
     
     if (!responseText || responseText.length < 10) {
       responseText = "Yanıt oluşturulamadı, lütfen soruyu yeniden deneyin.";
     }
     
-    // Normal request için de conversation bilgilerini döndür
     return {
       answer: responseText,
       conversationSaved: data.conversation_saved || false,
@@ -212,7 +206,6 @@ export const chatAPI = {
   }
 };
 export const conversationsAPI = {
-  // Eski endpoint'ler (geriye uyumluluk için)
   getAll: async () => {
     const response = await fetch(`${API_BASE}/history`, {
       headers: getAuthHeaders()
@@ -255,9 +248,7 @@ export const conversationsAPI = {
   }
 };
 
-// Yeni Threading API
 export const threadsAPI = {
-  // Thread listesi al
   getAll: async () => {
     const response = await fetch(`${API_BASE}/threads`, {
       headers: getAuthHeaders()
@@ -273,7 +264,6 @@ export const threadsAPI = {
     return data.threads || [];
   },
   
-  // Belirli thread'in tüm mesajları
   getMessages: async (threadId) => {
     const response = await fetch(`${API_BASE}/threads/${threadId}/messages`, {
       headers: getAuthHeaders()
@@ -289,7 +279,6 @@ export const threadsAPI = {
     return data.messages || [];
   },
   
-  // Thread sil
   delete: async (threadId) => {
     const response = await fetch(`${API_BASE}/threads/${threadId}`, {
       method: 'DELETE',

@@ -19,14 +19,13 @@ const AppContent = () => {
   const { isDarkMode } = useTheme();
   const { user } = useAuth();
 
-  // Sidebar başlangıçta masaüstünde açık, mobilde kapalı
   const [showSidebar, setShowSidebar] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     if (!isInitialized) {
       const checkScreenSize = () => {
-        setShowSidebar(window.innerWidth >= 1024); // lg breakpoint
+        setShowSidebar(window.innerWidth >= 1024);
         setIsInitialized(true);
       };
 
@@ -88,7 +87,6 @@ const AppContent = () => {
         />
       )}
 
-      {/* Sidebar - ChatGPT tarzı */}
       {showSidebar && (
         <div className="w-80 flex-shrink-0 fixed lg:relative inset-y-0 left-0 z-50 lg:z-auto">
           <Sidebar
@@ -106,7 +104,6 @@ const AppContent = () => {
         </div>
       )}
 
-      {/* Main Content */}
       <div className="flex-1 h-screen max-h-screen flex flex-col transition-all duration-300 ease-in-out overflow-hidden">
         <Header
           showSidebar={showSidebar}
@@ -135,7 +132,6 @@ const AppContent = () => {
       </div>
       <AuthModal onLoadConversations={loadThreads} />
 
-      {/* Toast Container */}
       <ToastContainer
         position="top-right"
         autoClose={3000}

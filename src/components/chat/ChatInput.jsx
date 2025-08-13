@@ -17,14 +17,12 @@ const ChatInput = ({
     }
   };
 
-  // Textarea yükseklik ayarı
   const handleInput = (e) => {
     setInputMessage(e.target.value);
     
-    // Auto-resize textarea
     if (inputRef.current) {
-      inputRef.current.style.height = '3rem'; // Reset to minimum
-      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 128)}px`; // Max 128px
+      inputRef.current.style.height = '3rem'; 
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 128)}px`;
     }
   };
   return (

@@ -22,19 +22,17 @@ export const useConversations = (user) => {
     }
   };
   
-  // Yeni conversation'ı anında listeye ekle
   const addNewConversation = (conversationId, question, answer) => {
     const newConversation = {
       id: conversationId,
-      question: question.slice(0, 100), // İlk 100 karakter
-      answer: answer.slice(0, 200), // İlk 200 karakter
+      question: question.slice(0, 100),
+      answer: answer.slice(0, 200),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
     
     console.log('➕ Yeni conversation listeye ekleniyor:', newConversation);
     
-    // Yeni conversation'ı listenin başına ekle
     setConversations(prev => [newConversation, ...prev]);
     setCurrentConversationId(conversationId);
   };
@@ -85,7 +83,7 @@ export const useConversations = (user) => {
       {
         id: 1,
         type: "bot",
-        content: "Merhaba! Ben AI asistanınızım. Size nasıl yardımcı olabilirim?",
+        content: "Hello, I'm your AI assistant. How can I assist you?",
         timestamp: new Date(),
       },
     ]);
@@ -99,7 +97,6 @@ export const useConversations = (user) => {
     }
   }, [user]);
   
-  // Login sonrası chat temizleme event'ini dinle
   useEffect(() => {
     loadConversations();
   }, [user]);
@@ -110,26 +107,23 @@ export const useConversations = (user) => {
       setCurrentConversationId(null);
     };
     
-    // Yeni conversation kaydedildiğinde listeyi yenile
     const handleConversationSaved = (event) => {
       const { conversationId, question, answer } = event.detail || {};
-      console.log('🔔 Yeni conversation event alındı:', conversationId);
+      console.log('Yeni conversation event alındı:', conversationId);
       
       if (conversationId && question && answer) {
-        // Önce anında listeye ekle
         addNewConversation(conversationId, question, answer);
         
-        // Sonra backend'den güncel listeyi al (background'da)
         setTimeout(() => {
-          console.log('🔄 Background refresh başlatılıyor...');
+          console.log('Background refresh başlatılıyor...');
           loadConversations().then(() => {
-            console.log('✅ Background refresh tamamlandı');
+            console.log('Background refresh tamamlandı');
           }).catch(error => {
-            console.error('❌ Background refresh başarısız:', error);
+            console.error('Background refresh başarısız:', error);
           });
-        }, 1000); // 1 saniye sonra
+        }, 1000); 
       } else {
-        console.warn('⚠️ Event data eksik:', { conversationId, question, answer });
+        console.warn('Event data eksik:', { conversationId, question, answer });
       }
     };
     

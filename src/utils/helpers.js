@@ -16,7 +16,7 @@ export const copyToClipboard = async (text) => {
 export const getWelcomeMessage = () => ({
   id: 1,
   type: "bot",
-  content: "Merhaba! Ben AI asistanınızım. Size nasıl yardımcı olabilirim?",
+  content: "Hello, I'm your AI assistant. How can I assist you?",
   timestamp: new Date(),
 });
 export const convertConversationToMessages = (conversation) => {
@@ -26,7 +26,7 @@ export const convertConversationToMessages = (conversation) => {
     {
       id: 1,
       type: "bot",
-      content: "Merhaba! Ben AI asistanınızım. Size nasıl yardımcı olabilirim?",
+      content: "Hello, I'm your AI assistant. How can I assist you?",
       timestamp: new Date(conversationDate.getTime() - 1000),
     },
     {

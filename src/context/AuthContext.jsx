@@ -18,11 +18,9 @@ export const AuthProvider = ({ children }) => {
     const savedUser = localStorage.getItem('user');
     
     if (token && savedUser) {
-      // Token'ı doğrula
       validateToken(token);
     }
 
-    // Auth error listener ekle
     const handleAuthError = () => {
       logout();
     };
@@ -43,7 +41,6 @@ export const AuthProvider = ({ children }) => {
         const userData = await response.json();
         setUser(userData.user);
       } else {
-        // Token geçersiz - temizle
         console.log('🔄 Token geçersiz, temizleniyor...');
         logout();
       }
@@ -57,11 +54,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('accessToken', token);
     localStorage.setItem('user', JSON.stringify(userData));
     
-    // Eğer backend clear_chat flag'ini gönderdiyse chat geçmişini temizle
     if (clearChat) {
       localStorage.removeItem('chatHistory');
       localStorage.removeItem('currentConversation');
-      // Custom event dispatch ederek chat component'inin dinlemesini sağla
       window.dispatchEvent(new CustomEvent('clearChat'));
     }
     
@@ -82,7 +77,6 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('user');
       
-      // Çıkış başarılı toast'ı
       toast.info('Başarıyla çıkış yaptınız! 👋', {
         position: "top-right",
         autoClose: 3000,

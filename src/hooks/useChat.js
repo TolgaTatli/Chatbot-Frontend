@@ -7,7 +7,7 @@ export const useChat = (user, apiSettings) => {
     {
       id: 1,
       type: "bot",
-      content: "Merhaba! Ben AI asistanınızım. Size nasıl yardımcı olabilirim?",
+      content: "Hello, I'm your AI assistant. How can I assist you?",
       timestamp: new Date(),
     },
   ]);
@@ -53,11 +53,9 @@ export const useChat = (user, apiSettings) => {
       timestamp: new Date(),
     };
     
-    // Question'ı sakla
     const questionText = inputMessage;
     setCurrentQuestion(questionText);
     
-    // Eğer yeni thread ise loading state'i başlat
     if (!currentThreadId) {
       console.log('🆕 Yeni thread oluşturuluyor...');
       setIsCreatingNewThread(true);
@@ -87,9 +85,9 @@ export const useChat = (user, apiSettings) => {
         questionText,
         apiSettings.topK,
         user?.id,
-        currentThreadId, // Mevcut thread ID'yi gönder
+        currentThreadId,
         (partialContent) => {
-          finalAnswer = partialContent; // Son answer'ı sakla
+          finalAnswer = partialContent; 
           setMessages((prev) => 
             prev.map((msg) => 
               msg.id === botMessageId 
@@ -99,13 +97,11 @@ export const useChat = (user, apiSettings) => {
           );
         },
         (threadId, conversationId) => {
-          // Thread kaydedildiğinde ID'leri sakla ve event dispatch et
           setCurrentThreadId(threadId);
           setCurrentConversationId(conversationId);
-          setIsCreatingNewThread(false); // Loading state'i kapat
-          console.log('✅ Yeni thread kaydedildi:', { threadId, conversationId });
+          setIsCreatingNewThread(false);
+          console.log('Yeni thread kaydedildi:', { threadId, conversationId });
           
-          // Sadece gerçekten yeni thread ise toast göster
           if (!currentThreadId) {
             toast.success('Yeni sohbet başlatıldı! 💬', {
               position: "top-right",
@@ -113,7 +109,6 @@ export const useChat = (user, apiSettings) => {
             });
           }
           
-          // Custom event dispatch et - question ve answer da gönder
           window.dispatchEvent(new CustomEvent('threadSaved', { 
             detail: { 
               threadId,
@@ -133,25 +128,22 @@ export const useChat = (user, apiSettings) => {
         )
       );
       
-      // Model yanıtı tamamlandı toast'ı
       toast.success('Model yanıtı tamamlandı! ✅', {
         position: "top-right",
         autoClose: 2000,
       });
       
-      // Thread bilgilerini logla ve ID'yi koru
       if (streamResult.conversationSaved) {
-        // Thread ID'yi set et (eğer yeni ise)
         if (streamResult.threadId && !currentThreadId) {
           setCurrentThreadId(streamResult.threadId);
-          console.log('🔗 Thread ID güncellendi:', streamResult.threadId);
+          console.log('Thread ID güncellendi:', streamResult.threadId);
         }
-        console.log('✅ Thread başarıyla kaydedildi:', { 
+        console.log('Thread başarıyla kaydedildi:', { 
           threadId: streamResult.threadId, 
           conversationId: streamResult.conversationId 
         });
       } else {
-        console.warn('⚠️ Thread kaydedilemedi');
+        console.warn('Thread kaydedilemedi');
       }
       
       setShowInputGlow(true);
@@ -172,15 +164,13 @@ export const useChat = (user, apiSettings) => {
           )
         );
         
-        // Normal request için de thread kontrolü
         if (response.conversationSaved) {
-          // Thread ID'yi set et (eğer yeni ise)
           if (response.threadId && !currentThreadId) {
             setCurrentThreadId(response.threadId);
             setCurrentConversationId(response.conversationId);
-            console.log('🔗 Fallback Thread ID güncellendi:', response.threadId);
+            console.log('Fallback Thread ID güncellendi:', response.threadId);
           }
-          console.log('✅ Fallback thread kaydedildi:', { 
+          console.log('Fallback thread kaydedildi:', { 
             threadId: response.threadId, 
             conversationId: response.conversationId 
           });
@@ -197,7 +187,6 @@ export const useChat = (user, apiSettings) => {
       } catch (fallbackError) {
         const errorMessage = `Üzgünüm, API bağlantısında bir hata oluştu: ${fallbackError.message}. Lütfen tekrar deneyin.`;
         
-        // API hata toast'ı
         toast.error('Bağlantı hatası! Lütfen tekrar deneyin. 🔄', {
           position: "top-right",
           autoClose: 4000,
@@ -213,8 +202,8 @@ export const useChat = (user, apiSettings) => {
       }
     } finally {
       setIsLoading(false);
-      setIsCreatingNewThread(false); // Her durumda loading state'i kapat
-      setCurrentQuestion(""); // Question'ı temizle
+      setIsCreatingNewThread(false); 
+      setCurrentQuestion("");
     }
   };
   const clearChat = () => {
@@ -222,26 +211,26 @@ export const useChat = (user, apiSettings) => {
       {
         id: 1,
         type: "bot",
-        content: "Merhaba! Ben AI asistanınızım. Size nasıl yardımcı olabilirim?",
+        content:"Hello, I'm your AI assistant. How can I assist you?",
         timestamp: new Date(),
       },
     ]);
-    setCurrentConversationId(null); // Yeni chat başlarken conversation ID'yi temizle
-    setCurrentThreadId(null); // Thread ID'yi de temizle
-    setIsCreatingNewThread(false); // Loading state'i temizle
-    setCurrentQuestion(""); // Question'ı temizle
+    setCurrentConversationId(null);
+    setCurrentThreadId(null); 
+    setIsCreatingNewThread(false); 
+    setCurrentQuestion(""); 
   };
   useEffect(() => {
-    testConnection();
+    testConnection()
     checkRAGStatus();
     
-    // Login sonrası chat temizleme event'ini dinle
+ 
     const handleClearChat = () => {
       setMessages([
         {
           id: 1,
           type: "bot",
-          content: "Merhaba! Ben AI asistanınızım. Size nasıl yardımcı olabilirim?",
+          content: "Hello, I'm your AI assistant. How can I assist you?",
           timestamp: new Date(),
         },
       ]);

@@ -18,13 +18,12 @@ const AuthModal = ({ onLoadConversations }) => {
   } = useAuth();
   const handleAuth = async (e) => {
     e.preventDefault();
-    setIsLoading(true); // Loading başlat
+    setIsLoading(true);
     
     try {
       if (authMode === 'signin') {
         const data = await authAPI.signIn(authForm.email, authForm.password);
         
-        // Backend'den clear_chat flag'ini kontrol et
         const clearChat = data.clear_chat || false;
         
         login(data.user, data.access_token, clearChat);
@@ -33,8 +32,7 @@ const AuthModal = ({ onLoadConversations }) => {
           onLoadConversations();
         }
         
-        // Başarılı giriş toast'ı
-        toast.success(`Hoş geldiniz, ${data.user.email}! 🎉`, {
+        toast.success(`Hoş geldiniz, ${data.user.email}!`, {
           position: "top-right",
           autoClose: 3000,
         });
@@ -44,20 +42,18 @@ const AuthModal = ({ onLoadConversations }) => {
         setAuthMode('signin');
         setAuthForm({ email: authForm.email, password: '', fullName: '' });
         
-        // Başarılı kayıt toast'ı
-        toast.success('Kayıt başarılı! Şimdi giriş yapabilirsiniz. ✅', {
+        toast.success('Kayıt başarılı! Şimdi giriş yapabilirsiniz.', {
           position: "top-right",
           autoClose: 4000,
         });
       }
     } catch (error) {
-      // Hata toast'ı
       toast.error(error.message || 'Bir hata oluştu!', {
         position: "top-right",
         autoClose: 4000,
       });
     } finally {
-      setIsLoading(false); // Loading bitir
+      setIsLoading(false);
     }
   };
   const switchMode = () => {
